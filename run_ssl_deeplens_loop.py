@@ -1,9 +1,76 @@
+import numpy as np
 import tensorflow as tf
 from absl import app as absl_app
 from absl import flags
+from astropy.table import Table
 import resnet_model_ssl
 from official.resnet import resnet_run_loop
 from official.utils.logs import logger
+
+
+_DB_PATH_1_ = '/home/milesx/Downloads/catalogs_test_ones_and_twos_40000.hdf5'
+_UNIT_NUM_ = 1000
+_TIMES_ = 3
+_SAVE_DIR_ = '.'
+_MASK_RATE_ = 0.5
+
+tempens_params = {
+    'type': 'tempens',
+    'masks': [],
+    'ensemble_pred': [],
+    'targets': [],
+    'ru': 0.0,
+    'rd': 0.0,
+    'lr': 0.0,
+    'adam_beta': 0.0,
+    'unsup_wght': 0.0,
+    'scale_unsup_wght_max': 0.0,
+    'coeff_embed': 0.2
+}
+
+
+def load_dataset(db_path, normalize=True, one_hot=False):
+    data = Table.read(db_path, path='/test')
+
+    train_x, train_y = [], []
+    train_x.append(data['image'][0:_UNIT_NUM_ * _TIMES_])
+    train_y.append(data['is_lens'][0:_UNIT_NUM_ * _TIMES_])
+    train_x = np.vstack(train_x)
+    train_y = np.hstack(train_y)
+    #train_x = train_x.astype('float32')
+    #train_y = train_y.astype('float32')
+    train_x = train_x.reshape((_UNIT_NUM_ * _TIMES_, 1, 48, 48))
+
+    test_x, test_y = [], []
+    test_x.append(data['image'][-_UNIT_NUM_:])
+    test_y.append(data['is_lens'][-_UNIT_NUM_:])
+    test_x = np.vstack(test_x)
+    test_y = np.hstack(test_y)
+    test_x = test_x.reshape(_UNIT_NUM_, 1, 48, 48)
+    return train_x, train_y, test_x, test_y
+
+
+def preprocess_dataset(savedir, train_x, train_y, test_x, test_y):
+    indices = np.arange(len(train_x))
+    np.random.shuffle(indices)
+    train_x = train_x[indices]
+    train_y = train_y[indices]
+    train_mask = np.zeros(len(train_y), dtype=np.float32)
+    mask_count = int(_UNIT_NUM_ * _TIMES_ * _MASK_RATE_)
+    count = [0, 0]
+    for i in range(len(train_y)):
+        if sum(count) == mask_count:
+            break
+        label = int(train_y[i])
+        if count[label] < (mask_count // 2):
+            train_mask[i] = 1.0
+            count[label] += 1
+
+    for i in range(len(train_y)):
+        if not train_mask[i] > 0:
+            train_y[i] = -1.0  # unlabeled
+
+    return train_x, train_y, train_mask, test_x, test_y
 
 
 class SSLDeepLensModel(resnet_model_ssl.ModelSSL):
@@ -28,7 +95,8 @@ class SSLDeepLensModel(resnet_model_ssl.ModelSSL):
         )
 
 
-def ssl_deeplens_model_fn(features, labels, mode, model_class):
+def ssl_deeplens_model_fn(features, labels, masks, targets, mode, model_class,
+                          params=tempens_params):
     model = model_class()
     logits, embed = model(features, mode == tf.estimator.ModeKeys.TRAIN)
     predictions = {
@@ -44,8 +112,40 @@ def ssl_deeplens_model_fn(features, labels, mode, model_class):
             }
         )
 
+    pred_t = tf.nn.softmax(logits)
+    labeled_cost = tf.reduce_mean(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=labels, logits=logits) * masks
+    )
+    unlabeled_cost = tf.reduce_mean(tf.square(pred_t - targets))
+    cost = labeled_cost + params.unsup_wght * unlabeled_cost
+    # TODO: add if embed
+    half = tf.to_int32(tf.to_float(tf.shape(embed)[0]) / 2.)
+    eucd2 = tf.reduce_mean(tf.square(embed[:half] - embed[half:]), axis=1)
+    eucd = tf.sqrt(eucd2, name='eucd')
+    margin = tf.constant(1.0, dtype=tf.float32, name='margin')
+    target_hard = tf.to_int32(tf.argmax(targets, axis=1))
+    merged_tar = tf.where(tf.equal(masks, 0), target_hard, labels)
+    neighbor_bool = tf.equal(merged_tar[:half], merged_tar[half:])
+    embed_loasses = tf.where(neighbor_bool, eucd2,
+                             tf.square(tf.maximum(margin - eucd, 0)))
+    embed_loss = tf.reduce_mean(embed_loasses, name='loss')
+    cost += params.unsup_wght * embed_loss * params.coeff_embed
+
     if mode == tf.estimator.ModeKeys.TRAIN:
-        return tf.estimator.EstimatorSpec()
+        optimizer = tf.train.AdamOptimizer(learning_rate=params.lr,
+                                           beta1=params.adam_beta)
+        infer = optimizer.minimize(cost)
+        update_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        train_op = tf.group(infer, update_op)
+    else:
+        train_op = None
+    return tf.estimator.EstimatorSpec(
+        mode=mode,
+        predictions=predictions,
+        loss=cost,
+        train_op=train_op
+    )
 
 
 def define_ssl_deeplens_flags():
@@ -62,6 +162,7 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.logging.set_verbosity(tf.logging.INFO)
-    define_ssl_deeplens_flags()
-    absl_app.run(main)
+    # tf.logging.set_verbosity(tf.logging.INFO)
+    # define_ssl_deeplens_flags()
+    # absl_app.run(main)
+    load_dataset(_DB_PATH_1_)

@@ -540,10 +540,10 @@ class ModelSSL(object):
             inputs = tf.reduce_mean(inputs, axes, keepdims=True)
             inputs = tf.identity(inputs, 'final_reduce_mean')
 
-            #inputs = tf.squeeze(inputs, axes)
-            #inputs = tf.layers.dense(inputs=inputs, units=self.num_classes)
-            #inputs = tf.identity(inputs, 'final_dense')
+            # inputs = tf.squeeze(inputs, axes)
+            # inputs = tf.layers.dense(inputs=inputs, units=self.num_classes)
+            # inputs = tf.identity(inputs, 'final_dense')
             logits = tf.squeeze(inputs, axes)
             logits = tf.layers.dense(inputs=logits, units=self.num_classes)
             logits = tf.identity(logits, 'final_dense')
-            return logits, inputs
+          return logits, inputs
