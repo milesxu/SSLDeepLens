@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import tensorflow as tf
 from absl import app as absl_app
@@ -19,14 +20,44 @@ tempens_params = {
     'masks': [],
     'ensemble_pred': [],
     'targets': [],
-    'ru': 0.0,
-    'rd': 0.0,
-    'lr': 0.0,
-    'adam_beta': 0.0,
-    'unsup_wght': 0.0,
-    'scale_unsup_wght_max': 0.0,
-    'coeff_embed': 0.2
+    'lr': 0.003,
+    'adam_beta1': 0.9,
+    'rd_beta_target': 0.5,
+    'scale_unsup_wght_max': 100.0,
+    'coeff_embed': 0.2,
+    'num_epochs': 300,
+    'rampup': 80,
+    'rampdown': 50,
 }
+
+
+def params_update(params):
+
+    def rampup(epoch):
+        p = tf.cast(epoch, tf.float32) / params['rampup']
+        p = 1.0 - p
+        return math.exp(-p * p * 5.0)
+
+    def rampdown(epoch):
+        p = (epoch - (params['num_epochs'] - params['rampdown'])) * 0.5
+        return math.exp(-(p * p) / rampdown)
+
+    def learning_rate_fn(global_step):
+        epoch = global_step // params['num_epochs']
+        ru = tf.cond(tf.less(epoch, params['rampup']),
+                     lambda: rampup(epoch), lambda: tf.constant(1.0))
+        rd = tf.cond(
+            tf.greater_equal(epoch, params['num_epochs'] - params['rampdown']),
+            lambda: rampdown(epoch), lambda: tf.constant(1.0))
+        learning_rate = params['lr'] * ru * rd
+        adam_beta =
+        rd * params['adam_beta1'] + (1.0 - rd) params['rd_beta_target']
+        unsup_wght = tf.cond(
+            tf.equal(epoch, 0),
+            lambda: ru * params['scale_unsup_wght_max'], lambda: 0.0)
+        return learning_rate, adam_beta, unsup_wght
+
+    return learning_rate_fn
 
 
 def load_dataset(db_path, normalize=True, one_hot=False):
@@ -117,24 +148,27 @@ def ssl_deeplens_model_fn(features, labels, masks, targets, mode, model_class,
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=labels, logits=logits) * masks
     )
-    unlabeled_cost = tf.reduce_mean(tf.square(pred_t - targets))
-    cost = labeled_cost + params.unsup_wght * unlabeled_cost
-    # TODO: add if embed
-    half = tf.to_int32(tf.to_float(tf.shape(embed)[0]) / 2.)
-    eucd2 = tf.reduce_mean(tf.square(embed[:half] - embed[half:]), axis=1)
-    eucd = tf.sqrt(eucd2, name='eucd')
-    margin = tf.constant(1.0, dtype=tf.float32, name='margin')
-    target_hard = tf.to_int32(tf.argmax(targets, axis=1))
-    merged_tar = tf.where(tf.equal(masks, 0), target_hard, labels)
-    neighbor_bool = tf.equal(merged_tar[:half], merged_tar[half:])
-    embed_loasses = tf.where(neighbor_bool, eucd2,
-                             tf.square(tf.maximum(margin - eucd, 0)))
-    embed_loss = tf.reduce_mean(embed_loasses, name='loss')
-    cost += params.unsup_wght * embed_loss * params.coeff_embed
-
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.AdamOptimizer(learning_rate=params.lr,
-                                           beta1=params.adam_beta)
+        global_step = tf.train.get_or_create_global_step()
+        learning_rate_fn = params_update(params)
+        learning_rate, adam_beta, unsup_wght = learning_rate_fn(global_step)
+        unlabeled_cost = tf.reduce_mean(tf.square(pred_t - targets))
+        cost = labeled_cost + unsup_wght * unlabeled_cost
+        # TODO: add if embed
+        half = tf.to_int32(tf.to_float(tf.shape(embed)[0]) / 2.)
+        eucd2 = tf.reduce_mean(tf.square(embed[:half] - embed[half:]), axis=1)
+        eucd = tf.sqrt(eucd2, name='eucd')
+        margin = tf.constant(1.0, dtype=tf.float32, name='margin')
+        target_hard = tf.to_int32(tf.argmax(targets, axis=1))
+        merged_tar = tf.where(tf.equal(masks, 0), target_hard, labels)
+        neighbor_bool = tf.equal(merged_tar[:half], merged_tar[half:])
+        embed_loasses = tf.where(neighbor_bool, eucd2,
+                                 tf.square(tf.maximum(margin - eucd, 0)))
+        embed_loss = tf.reduce_mean(embed_loasses, name='loss')
+        cost += unsup_wght * embed_loss * params['coeff_embed']
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate,
+                                           beta1=adam_beta)
         infer = optimizer.minimize(cost)
         update_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         train_op = tf.group(infer, update_op)
