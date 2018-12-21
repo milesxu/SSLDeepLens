@@ -7,6 +7,7 @@ from astropy.table import Table
 import resnet_model_ssl
 from official.resnet import resnet_run_loop
 from official.utils.logs import logger
+import dataset_ops
 
 
 _DB_PATH_1_ = '/home/milesx/Downloads/catalogs_test_ones_and_twos_40000.hdf5'
@@ -17,9 +18,9 @@ _MASK_RATE_ = 0.5
 
 tempens_params = {
     'type': 'tempens',
+    'n_data': 1000,
+    'n_lables': 2,
     'masks': [],
-    'ensemble_pred': [],
-    'targets': [],
     'lr': 0.003,
     'adam_beta1': 0.9,
     'rd_beta_target': 0.5,
@@ -28,7 +29,18 @@ tempens_params = {
     'num_epochs': 300,
     'rampup': 80,
     'rampdown': 50,
+    'pred_decay': 0.6,
+    'max_unl_per_epoch': None
+    'ground_based_path': '/home/milesx/datasets/deeplens/'
 }
+
+
+def get_tempens_variables(params):
+    with tf.variable_scope('tempens', reuse=True):
+        v_shape = [params['n_data'], params['n_lables']]
+        ensemble_pred = tf.get_variable('ensemble_pred', shape=v_shape)
+        targets = tf.get_variable('targets', shape=v_shape)
+    return ensemble_pred, targets
 
 
 def params_update(params):
@@ -60,50 +72,6 @@ def params_update(params):
     return learning_rate_fn
 
 
-def load_dataset(db_path, normalize=True, one_hot=False):
-    data = Table.read(db_path, path='/test')
-
-    train_x, train_y = [], []
-    train_x.append(data['image'][0:_UNIT_NUM_ * _TIMES_])
-    train_y.append(data['is_lens'][0:_UNIT_NUM_ * _TIMES_])
-    train_x = np.vstack(train_x)
-    train_y = np.hstack(train_y)
-    #train_x = train_x.astype('float32')
-    #train_y = train_y.astype('float32')
-    train_x = train_x.reshape((_UNIT_NUM_ * _TIMES_, 1, 48, 48))
-
-    test_x, test_y = [], []
-    test_x.append(data['image'][-_UNIT_NUM_:])
-    test_y.append(data['is_lens'][-_UNIT_NUM_:])
-    test_x = np.vstack(test_x)
-    test_y = np.hstack(test_y)
-    test_x = test_x.reshape(_UNIT_NUM_, 1, 48, 48)
-    return train_x, train_y, test_x, test_y
-
-
-def preprocess_dataset(savedir, train_x, train_y, test_x, test_y):
-    indices = np.arange(len(train_x))
-    np.random.shuffle(indices)
-    train_x = train_x[indices]
-    train_y = train_y[indices]
-    train_mask = np.zeros(len(train_y), dtype=np.float32)
-    mask_count = int(_UNIT_NUM_ * _TIMES_ * _MASK_RATE_)
-    count = [0, 0]
-    for i in range(len(train_y)):
-        if sum(count) == mask_count:
-            break
-        label = int(train_y[i])
-        if count[label] < (mask_count // 2):
-            train_mask[i] = 1.0
-            count[label] += 1
-
-    for i in range(len(train_y)):
-        if not train_mask[i] > 0:
-            train_y[i] = -1.0  # unlabeled
-
-    return train_x, train_y, train_mask, test_x, test_y
-
-
 class SSLDeepLensModel(resnet_model_ssl.ModelSSL):
     """ssl deep lens model use standard tf models"""
 
@@ -124,6 +92,10 @@ class SSLDeepLensModel(resnet_model_ssl.ModelSSL):
             data_format=data_format,
             dtype=dtype
         )
+        # self.targets = tf.Variable()
+
+    # def __call__(self, inputs, training):
+    #     logits, embed = super().__call__(inputs, training)
 
 
 def ssl_deeplens_model_fn(features, labels, masks, targets, mode, model_class,
@@ -170,8 +142,9 @@ def ssl_deeplens_model_fn(features, labels, masks, targets, mode, model_class,
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate,
                                            beta1=adam_beta)
         infer = optimizer.minimize(cost)
-        update_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        train_op = tf.group(infer, update_op)
+        # update_op = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        # train_op = tf.group(infer, update_op)
+        train_op = infer
     else:
         train_op = None
     return tf.estimator.EstimatorSpec(
@@ -199,4 +172,4 @@ if __name__ == "__main__":
     # tf.logging.set_verbosity(tf.logging.INFO)
     # define_ssl_deeplens_flags()
     # absl_app.run(main)
-    load_dataset(_DB_PATH_1_)
+    # load_dataset(_DB_PATH_1_)
