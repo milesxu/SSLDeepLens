@@ -30,7 +30,7 @@ tempens_params = {
     'rampup': 80,
     'rampdown': 50,
     'pred_decay': 0.6,
-    'max_unl_per_epoch': None
+    'max_unl_per_epoch': None,
     'ground_based_path': '/home/milesx/datasets/deeplens/'
 }
 
