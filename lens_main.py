@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.optim as opt
 import torch.nn as nn
@@ -7,13 +8,19 @@ import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
 
-# path = 'C:\\Users\\miles\\Documents\\dataset'
-path = '/home/milesx/datasets/deeplens/'
+path = 'C:\\Users\\miles\\Documents\\dataset'
+# path = '/home/milesx/datasets/deeplens/'
 n_data = 20
 num_classes = 2
+num_epochs = 3
+rampup_length = 80
+rampdown_length = 50
+learning_rate = 0.003
 pred_decay = 0.6
 embed = True
 embed_coeff = 0.2
+adam_beta1 = 0.9
+rd_beta1_target = 0.5
 ground_based_dataset = gbd.GroundBasedDataset(path, length=n_data)
 ground_train_loader = DataLoader(ground_based_dataset, batch_size=10,
                                  shuffle=True)
@@ -27,9 +34,33 @@ ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
 labeled_loss = nn.CrossEntropyLoss()
 optimizer = opt.Adam(ssl_lens_net.parameters())
 
-for epoch in range(2):
+
+def rampup(epoch):
+    if epoch < rampup_length:
+        p = 1.0 - epoch / rampup_length
+        return math.exp(-p * p * 5.0)
+    return 1.0
+
+
+def rampdown(epoch):
+    if epoch >= num_epochs - rampdown_length:
+        ep = (epoch - num_epochs + rampdown_length) * 0.5
+        return math.exp(-(ep * ep) / rampdown_length)
+    return 1.0
+
+
+for epoch in range(num_epochs):
+
     epoch_pred = torch.zeros((n_data, num_classes))
     epoch_mask = torch.zeros((n_data))
+
+    ru, rd = rampup(epoch), rampdown(epoch)
+    lr = ru * rd * learning_rate
+    adam_beta = rd * adam_beta1 + (1.0 - rd) * rd_beta1_target
+    optimizer.lr = lr
+    print(optimizer.lr)
+    ##  optimizer.betas[0] = adam_beta
+
     for i, data in enumerate(ground_train_loader, 0):
         images, is_lens, mask, indices = data
         targets = torch.index_select(target_pred, 0, indices)
