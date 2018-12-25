@@ -15,7 +15,7 @@ class GroundBasedDataset(Dataset):
         self.image = torch.from_numpy(np.array(cat['image'][:length])).float()
         self.data_preprocess()
         self.is_lens = torch.from_numpy(np.array(cat['is_lens'][0:length]))
-        self.mask = torch.zeros(length)
+        self.mask = torch.zeros(length, dtype=torch.uint8)
         self.make_mask()
 
     def __len__(self):
@@ -64,7 +64,7 @@ class GroundBasedDataset(Dataset):
                 break
             label = int(self.is_lens[i])
             if count[label] < (mask_count // self.labels):
-                self.mask[i] = 1.0
+                self.mask[i] = 1
                 count[label] += 1
 
         # for i in range(self.length):

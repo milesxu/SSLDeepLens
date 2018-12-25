@@ -39,26 +39,21 @@ for epoch in range(2):
         outputs, h_x = ssl_lens_net(images)
         predicts = F.softmax(outputs, dim=1)
 
+        # update for ensemble
         for i, j in enumerate(indices):
             epoch_pred[j] = predicts[i]
             epoch_mask[j] = 1.0
 
-        l_temp, un_temp = [], []
-        for i, j in enumerate(mask):
-            if j:
-                l_temp.append(i)
-            else:
-                un_temp.append(i)
-        labeled_idx = torch.tensor(l_temp)
-        unlabeled_idx = torch.tensor(un_temp)
+        # labeled loss
+        labeled_mask = mask.eq(0)
+        #print(f'labeled: {labeled_mask} and unlabeled: {mask}')
+        loss = labeled_loss(outputs[labeled_mask], is_lens[labeled_mask])
 
+        # unlabeled loss
         unlabeled_loss = torch.mean((predicts - targets)**2)
-        labeled_outputs = torch.index_select(outputs, 0, labeled_idx)
-        #unlabeled_outputs = torch.index_select(outputs, 0, unlabeled_idx)
-        labeled_is_lens = torch.index_select(is_lens, 0, labeled_idx)
-        #unlabeled_is_lens = torch.index_select(is_lens, 0, unlabeled_idx)
-        loss = labeled_loss(labeled_outputs, labeled_is_lens)
         loss += unlabeled_loss * unsup_wght
+
+        # SNTG loss
         if embed:
             half = int(h_x.size()[0] // 2)
             print(h_x.size(), half, h_x[:half].size(), h_x[half:].size())
