@@ -7,7 +7,8 @@ import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
 
-path = 'C:\\Users\\miles\\Documents\\dataset'
+# path = 'C:\\Users\\miles\\Documents\\dataset'
+path = '/home/milesx/datasets/deeplens/'
 n_data = 20
 num_classes = 2
 pred_decay = 0.6
@@ -36,9 +37,7 @@ for epoch in range(2):
         optimizer.zero_grad()
 
         outputs, h_x = ssl_lens_net(images)
-        print(outputs.size())
         predicts = F.softmax(outputs, dim=1)
-        print(predicts.size())
 
         for i, j in enumerate(indices):
             epoch_pred[j] = predicts[i]
@@ -62,15 +61,24 @@ for epoch in range(2):
         loss += unlabeled_loss * unsup_wght
         if embed:
             half = int(h_x.size()[0] // 2)
+            print(h_x.size(), half, h_x[:half].size(), h_x[half:].size())
+            print(h_x[:half]-h_x[half:])
             eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
+            print('eucd2 ', eucd2)
             eucd = torch.sqrt(eucd2)
+            print(eucd2.size(), eucd.size())
             target_hard = torch.argmax(targets, dim=1).int()
+            print(target_hard, target_hard.size())
             merged_tar = torch.where(
                 mask.int() == 0, target_hard, is_lens.int())
+            print(merged_tar, merged_tar.size())
             neighbor_bool = torch.eq(merged_tar[:half], merged_tar[half:])
+            print(neighbor_bool)
             eucd_y = torch.where(eucd < 1.0, (1.0 - eucd)
                                  ** 2, torch.zeros_like(eucd))
+            print(eucd_y)
             embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
+            print(embed_losses)
             embed_loss = torch.mean(embed_losses)
             print(embed_loss)
             loss += embed_loss * unsup_wght * embed_coeff

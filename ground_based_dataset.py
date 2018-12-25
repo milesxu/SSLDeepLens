@@ -13,6 +13,7 @@ class GroundBasedDataset(Dataset):
         self.mask_rate = mask_rate
         self.labels = 2
         self.image = torch.from_numpy(np.array(cat['image'][:length])).float()
+        self.data_preprocess()
         self.is_lens = torch.from_numpy(np.array(cat['is_lens'][0:length]))
         self.mask = torch.zeros(length)
         self.make_mask()
@@ -31,6 +32,7 @@ class GroundBasedDataset(Dataset):
         root_path = os.path.join(root_path, 'GroundBasedTraining')
         hdfile = os.path.join(root_path, 'catalogs.hdf5')
         if os.path.isfile(hdfile):
+            print('loading hdf5 file...')
             return Table.read(hdfile, path='/ground')
         else:
             cat = Table.read(root_path + 'classifications.csv')
@@ -45,6 +47,13 @@ class GroundBasedDataset(Dataset):
             cat['image'] = ims
             cat.write(hdfile, path='/ground', append=True)
             return cat
+
+    def data_preprocess(self):
+        vmin, vmax, scale = -1e-9, 1e-9, 100
+        mask = self.image.eq(100)
+        self.image[mask] = 0
+        self.image.clamp_(vmin, vmax)
+        self.image.div_(vmax * scale)
 
     def make_mask(self):
         mask_count = int(self.length * self.mask_rate)

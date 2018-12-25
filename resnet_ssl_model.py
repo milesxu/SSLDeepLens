@@ -61,9 +61,11 @@ class ResNetSSL(nn.Module):
     # TODO: add dropout
     def __init__(self, layers, block=BottleneckV2, input_channels=4,
                  num_classes=2, active='elu', alpha=1.0,
-                 zero_init_residual=False, first_max_pool=False):
+                 zero_init_residual=False, first_max_pool=False,
+                 dropout=True):
         super(ResNetSSL, self).__init__()
         self.first_max_pool = first_max_pool
+        self.dropout = dropout
         self.num_channels = 32
         self.conv1 = nn.Conv2d(
             input_channels, self.num_channels, kernel_size=7, stride=2,
@@ -92,7 +94,6 @@ class ResNetSSL(nn.Module):
             stride, down_sample = 1 + (i > 0), None
             if stride != 1 or \
                     self.num_channels != out_channels * block.expansion:
-                # if in_channels != out_channels * block.expansion:
                 down_sample = nn.Sequential(
                     conv1x1(in_channels, out_channels * block.expansion,
                             stride=2),
@@ -106,6 +107,8 @@ class ResNetSSL(nn.Module):
                 layers_seq.append(
                     block(in_channels, out_channels))
             out_channels = out_channels * block.expansion
+            if i == 0 and self.dropout:
+                layers_seq.append(nn.Dropout2d())
         return nn.Sequential(*layers_seq)
 
     def forward(self, input):
