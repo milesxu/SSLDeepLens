@@ -1,3 +1,4 @@
+import sys
 import math
 import torch
 import torch.optim as opt
@@ -8,8 +9,10 @@ import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
 
-path = 'C:\\Users\\miles\\Documents\\dataset'
-# path = '/home/milesx/datasets/deeplens/'
+if sys.platform == 'linux':
+    path = '/home/milesx/datasets/deeplens/'
+else:
+    path = 'C:\\Users\\miles\\Documents\\dataset'
 n_data = 20
 num_classes = 2
 num_epochs = 3
@@ -49,17 +52,20 @@ def rampdown(epoch):
     return 1.0
 
 
+def adam_param_update(optimizer: opt.Adam, epoch):
+    ru, rd = rampup(epoch), rampdown(epoch)
+    for group in optimizer.param_groups:
+        group['lr'] = ru * rd * learning_rate
+        group['betas'] = (rd * adam_beta1 + (1.0 - rd) * rd_beta1_target,
+                          group['betas'][1])
+
+
 for epoch in range(num_epochs):
 
     epoch_pred = torch.zeros((n_data, num_classes))
     epoch_mask = torch.zeros((n_data))
 
-    ru, rd = rampup(epoch), rampdown(epoch)
-    lr = ru * rd * learning_rate
-    adam_beta = rd * adam_beta1 + (1.0 - rd) * rd_beta1_target
-    optimizer.lr = lr
-    print(optimizer.lr)
-    ##  optimizer.betas[0] = adam_beta
+    adam_param_update(optimizer, epoch)
 
     for i, data in enumerate(ground_train_loader, 0):
         images, is_lens, mask, indices = data

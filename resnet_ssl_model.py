@@ -62,7 +62,7 @@ class ResNetSSL(nn.Module):
     def __init__(self, layers, block=BottleneckV2, input_channels=4,
                  num_classes=2, active='elu', alpha=1.0,
                  zero_init_residual=False, first_max_pool=False,
-                 dropout=True):
+                 dropout=False):
         super(ResNetSSL, self).__init__()
         self.first_max_pool = first_max_pool
         self.dropout = dropout
