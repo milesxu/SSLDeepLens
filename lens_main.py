@@ -71,6 +71,20 @@ for epoch in range(num_epochs):
 
     for i, data in enumerate(ground_train_loader, 0):
         images, is_lens, mask, indices = data
+
+        if augment_translation:
+            p2d = tuple([augment_translation] * 4)
+            images = F.pad(images, p2d, 'reflect')
+            print(images.size())
+            crop, n_xl = augment_translation, 101
+            for image in images:
+                if augment_mirror and np.random.uniform() > 0.5:
+                    # image = image[:, :, ::-1]
+                    image = torch.flip(image, [2])
+                ofs0 = np.random.randint(0, 2 * crop + 1)
+                ofs1 = np.random.randint(0, 2 * crop + 1)
+                image = image[ofs0:ofs0 + n_xl, ofs1:ofs1 + n_xl, :]
+
         targets = torch.index_select(target_pred, 0, indices)
 
         optimizer.zero_grad()
