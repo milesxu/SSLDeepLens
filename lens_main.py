@@ -24,6 +24,8 @@ embed = True
 embed_coeff = 0.2
 adam_beta1 = 0.9
 rd_beta1_target = 0.5
+augment_mirror = True
+augment_translation = 2
 ground_based_dataset = gbd.GroundBasedDataset(path, length=n_data)
 ground_train_loader = DataLoader(ground_based_dataset, batch_size=10,
                                  shuffle=True)
@@ -93,26 +95,15 @@ for epoch in range(num_epochs):
         # SNTG loss
         if embed:
             half = int(h_x.size()[0] // 2)
-            print(h_x.size(), half, h_x[:half].size(), h_x[half:].size())
-            print(h_x[:half]-h_x[half:])
             eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
-            print('eucd2 ', eucd2)
             eucd = torch.sqrt(eucd2)
-            print(eucd2.size(), eucd.size())
             target_hard = torch.argmax(targets, dim=1).int()
-            print(target_hard, target_hard.size())
-            merged_tar = torch.where(
-                mask.int() == 0, target_hard, is_lens.int())
-            print(merged_tar, merged_tar.size())
+            merged_tar = torch.where(mask == 0, target_hard, is_lens.int())
             neighbor_bool = torch.eq(merged_tar[:half], merged_tar[half:])
-            print(neighbor_bool)
-            eucd_y = torch.where(eucd < 1.0, (1.0 - eucd)
-                                 ** 2, torch.zeros_like(eucd))
-            print(eucd_y)
+            eucd_y = torch.where(eucd < 1.0, (1.0 - eucd) ** 2,
+                                 torch.zeros_like(eucd))
             embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
-            print(embed_losses)
             embed_loss = torch.mean(embed_losses)
-            print(embed_loss)
             loss += embed_loss * unsup_wght * embed_coeff
         loss.backward()
         optimizer.step()
@@ -120,4 +111,4 @@ for epoch in range(num_epochs):
         print(loss.item())
 
     ensemble_pred = pred_decay * ensemble_pred + (1 - pred_decay) * epoch_pred
-    targets_pred = ensemble_pred / (1.0 - pred_decay ** (epoch + 1.0))
+    targets_pred = ensemble_pred / (1.0 - pred_decay ** (epoch + 1))
