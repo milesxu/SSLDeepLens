@@ -1,5 +1,7 @@
+import os
 import sys
 import math
+import datetime
 import torch
 import torch.optim as opt
 import torch.nn as nn
@@ -11,9 +13,10 @@ import resnet_ssl_model as rsm
 
 if sys.platform == 'linux':
     path = '/home/milesx/datasets/deeplens/'
+    save_path = os.path.join(path, 'saved_model')
 else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
-n_data = 20
+n_data = 512
 num_classes = 2
 num_epochs = 3
 rampup_length = 80
@@ -26,12 +29,11 @@ adam_beta1 = 0.9
 rd_beta1_target = 0.5
 augment_mirror = True
 augment_translation = 2
-ground_based_dataset = gbd.GroundBasedDataset(path, length=n_data)
-ground_train_loader = DataLoader(ground_based_dataset, batch_size=10,
-                                 shuffle=True)
-ensemble_pred = torch.zeros((n_data, num_classes))
-target_pred = torch.zeros((n_data, num_classes))
 unsup_wght = 0.0
+whiten_inputs = 'norm'
+ground_based_dataset = gbd.GroundBasedDataset(path, length=n_data)
+ground_train_loader = DataLoader(ground_based_dataset, batch_size=128,
+                                 shuffle=True, pin_memory=True)
 
 ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
 
@@ -62,20 +64,44 @@ def adam_param_update(optimizer: opt.Adam, epoch):
                           group['betas'][1])
 
 
+def whiten_norm(images):
+    images -= torch.mean(images, (1, 2, 3), True)
+    images /= torch.mean(images ** 2, (1, 2, 3), True) ** 0.5
+    return images
+
+
+cuda_device = torch.device("cuda:0")
+ssl_lens_net.to(cuda_device)
+ensemble_pred = torch.zeros((n_data, num_classes), device=cuda_device)
+target_pred = torch.zeros((n_data, num_classes), device=cuda_device)
+
+
 for epoch in range(num_epochs):
 
-    epoch_pred = torch.zeros((n_data, num_classes))
-    epoch_mask = torch.zeros((n_data))
+    epoch_pred = torch.zeros((n_data, num_classes), device=cuda_device)
+    epoch_mask = torch.zeros((n_data), device=cuda_device)
 
     adam_param_update(optimizer, epoch)
 
     for i, data in enumerate(ground_train_loader, 0):
         images, is_lens, mask, indices = data
+        images = images.to(cuda_device)
+        is_lens = is_lens.to(cuda_device)
+        mask = mask.to(cuda_device)
+        indices = indices.to(cuda_device)
+
+        if whiten_inputs:
+            if whiten_inputs == 'norm':
+                images = whiten_norm(images)
+            elif whiten_inputs == 'zca':
+                from zca_norm import ZCA
+                whitener = ZCA(x=images)
+                images = whitener.apply(images)
 
         if augment_translation:
             p2d = tuple([augment_translation] * 4)
             images = F.pad(images, p2d, 'reflect')
-            print(images.size())
+            # print(images.size())
             crop, n_xl = augment_translation, 101
             for image in images:
                 if augment_mirror and np.random.uniform() > 0.5:
@@ -83,7 +109,7 @@ for epoch in range(num_epochs):
                     image = torch.flip(image, [2])
                 ofs0 = np.random.randint(0, 2 * crop + 1)
                 ofs1 = np.random.randint(0, 2 * crop + 1)
-                image = image[ofs0:ofs0 + n_xl, ofs1:ofs1 + n_xl, :]
+                image = image[:, ofs0:ofs0 + n_xl, ofs1:ofs1 + n_xl]
 
         targets = torch.index_select(target_pred, 0, indices)
 
@@ -126,3 +152,11 @@ for epoch in range(num_epochs):
 
     ensemble_pred = pred_decay * ensemble_pred + (1 - pred_decay) * epoch_pred
     targets_pred = ensemble_pred / (1.0 - pred_decay ** (epoch + 1))
+
+if not os.path.isdir(save_path):
+    os.mkdir(save_path)
+file_name = 'ground_based' + \
+    datetime.datetime.now().isoformat(
+        '-',
+        timespec='minutes').replace(':', '-') + '.pth'
+torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
