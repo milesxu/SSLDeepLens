@@ -2,6 +2,7 @@ import os
 import sys
 import math
 import datetime
+import time
 import torch
 import torch.optim as opt
 import torch.nn as nn
@@ -16,7 +17,9 @@ if sys.platform == 'linux':
     save_path = os.path.join(path, 'saved_model')
 else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
-n_data = 512
+n_train_data = 512
+n_eval_data = 128
+batch_size = 128
 num_classes = 2
 num_epochs = 3
 rampup_length = 80
@@ -30,10 +33,17 @@ rd_beta1_target = 0.5
 augment_mirror = True
 augment_translation = 2
 unsup_wght = 0.0
-whiten_inputs = 'norm'
-ground_based_dataset = gbd.GroundBasedDataset(path, length=n_data)
-ground_train_loader = DataLoader(ground_based_dataset, batch_size=128,
-                                 shuffle=True, pin_memory=True)
+whiten_inputs = 'norm'  # norm, zca
+polyak_decay = 0.999
+has_cuda = torch.cuda.is_available()
+ground_train_dataset = gbd.GroundBasedDataset(path, length=n_train_data)
+ground_train_loader = DataLoader(ground_train_dataset, batch_size=batch_size,
+                                 shuffle=True, pin_memory=not has_cuda)
+ground_eval_dataset = gbd.GroundBasedDataset(path, offset=n_train_data,
+                                             length=n_eval_data)
+ground_eval_loader = DataLoader(ground_eval_dataset, batch_size=batch_size,
+                                shuffle=False, pin_memory=not has_cuda)
+
 
 ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
 
@@ -70,25 +80,35 @@ def whiten_norm(images):
     return images
 
 
-cuda_device = torch.device("cuda:0")
-ssl_lens_net.to(cuda_device)
-ensemble_pred = torch.zeros((n_data, num_classes), device=cuda_device)
-target_pred = torch.zeros((n_data, num_classes), device=cuda_device)
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+    ssl_lens_net.to(device)
+else:
+    device = torch.device('cpu')
+ensemble_pred = torch.zeros((n_train_data, num_classes), device=device)
+target_pred = torch.zeros((n_train_data, num_classes), device=device)
+t_one = torch.ones(())
+epoch_pred = t_one.new_empty(
+    (n_train_data, num_classes), dtype=torch.float32, device=device)
+epoch_mask = t_one.new_empty(
+    (n_train_data), dtype=torch.float32, device=device)
+epoch_loss = t_one.new_empty(
+    (batch_size, 4), dtype=torch.float32, device=device)
 
 
 for epoch in range(num_epochs):
-
-    epoch_pred = torch.zeros((n_data, num_classes), device=cuda_device)
-    epoch_mask = torch.zeros((n_data), device=cuda_device)
-
+    train_time = -time.time()
+    epoch_pred.zero_()
+    epoch_mask.zero_()
+    # epoch_loss.zero_()
     adam_param_update(optimizer, epoch)
 
     for i, data in enumerate(ground_train_loader, 0):
         images, is_lens, mask, indices = data
-        images = images.to(cuda_device)
-        is_lens = is_lens.to(cuda_device)
-        mask = mask.to(cuda_device)
-        indices = indices.to(cuda_device)
+        #images = images.to(cuda_device)
+        #is_lens = is_lens.to(cuda_device)
+        #mask = mask.to(cuda_device)
+        #indices = indices.to(cuda_device)
 
         if whiten_inputs:
             if whiten_inputs == 'norm':
@@ -119,17 +139,19 @@ for epoch in range(num_epochs):
         predicts = F.softmax(outputs, dim=1)
 
         # update for ensemble
-        for i, j in enumerate(indices):
-            epoch_pred[j] = predicts[i]
+        for k, j in enumerate(indices):
+            epoch_pred[j] = predicts[k]
             epoch_mask[j] = 1.0
 
         # labeled loss
         labeled_mask = mask.eq(0)
         #print(f'labeled: {labeled_mask} and unlabeled: {mask}')
         loss = labeled_loss(outputs[labeled_mask], is_lens[labeled_mask])
+        epoch_loss[i, 0] = loss.item()
 
         # unlabeled loss
         unlabeled_loss = torch.mean((predicts - targets)**2)
+        epoch_loss[i, 1] = unlabeled_loss.item()
         loss += unlabeled_loss * unsup_wght
 
         # SNTG loss
@@ -144,14 +166,22 @@ for epoch in range(num_epochs):
                                  torch.zeros_like(eucd))
             embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
             embed_loss = torch.mean(embed_losses)
+            epoch_loss[i, 2] = embed_loss.item()
             loss += embed_loss * unsup_wght * embed_coeff
+            epoch_loss[i, 3] = loss.item()
         loss.backward()
         optimizer.step()
 
-        print(loss.item())
+        # print(loss, unlabeled_loss)
 
     ensemble_pred = pred_decay * ensemble_pred + (1 - pred_decay) * epoch_pred
     targets_pred = ensemble_pred / (1.0 - pred_decay ** (epoch + 1))
+    loss_mean = torch.mean(epoch_loss, 0)
+    print(f"epoch {epoch}, time cosumed: {time.time() + train_time}, "
+          f"labeled loss: {loss_mean[0].item()}, "
+          f"unlabeled loss: {loss_mean[1].item()}, "
+          f"SNTG loss: {loss_mean[2].item()}, "
+          f"total loss: {loss_mean[3].item()}")
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)

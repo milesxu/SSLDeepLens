@@ -5,18 +5,32 @@ from astropy.table import Table
 from astropy.io import fits
 import numpy as np
 
+cat = None
+
 
 class GroundBasedDataset(Dataset):
-    def __init__(self, root_path, length=20000, mask_rate=0.5):
-        cat = self.load_ground_based_data(root_path)
+    def __init__(self, root_path, offset=0, length=20000, mask_rate=0.5):
+        global cat
+        if cat is None:
+            cat = self.load_ground_based_data(root_path)
+        self.offset = offset
         self.length = length
         self.mask_rate = mask_rate
         self.labels = 2
-        self.image = torch.from_numpy(np.array(cat['image'][:length])).float()
+        self.image = torch.from_numpy(
+            np.array(cat['image'][offset:offset + length])).float()
         self.data_preprocess()
-        self.is_lens = torch.from_numpy(np.array(cat['is_lens'][0:length]))
+        self.is_lens = torch.from_numpy(
+            np.array(cat['is_lens'][offset:offset+length]))
         self.mask = torch.zeros(length, dtype=torch.uint8)
         self.make_mask()
+        self.indices = torch.as_tensor(range(offset, offset+length))
+        if torch.cuda.is_available():
+            cuda_device = torch.device("cuda:0")
+            self.image = self.image.to(cuda_device)
+            self.is_lens = self.is_lens.to(cuda_device)
+            self.mask = self.mask.to(cuda_device)
+            self.indices = self.indices.to(cuda_device)
 
     def __len__(self):
         return self.length
@@ -26,7 +40,8 @@ class GroundBasedDataset(Dataset):
         #           'is_lens': self.is_lens[index],
         #           'mask': self.mask[index],
         #           'index': index}
-        return self.image[index], self.is_lens[index], self.mask[index], index
+        return self.image[index], self.is_lens[index], self.mask[index], \
+            self.indices[index]
 
     def load_ground_based_data(self, root_path):
         root_path = os.path.join(root_path, 'GroundBasedTraining')
