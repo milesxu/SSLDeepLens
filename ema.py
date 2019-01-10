@@ -17,4 +17,5 @@ class EMA:
                 c_param.data -= (1 - self.mu) * (c_param.data - s_param.data)
 
     def __call__(self, x):
+        self.cpy.eval()
         return self.cpy(x)
