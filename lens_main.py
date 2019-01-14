@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
+from ema import EMA
 
 if sys.platform == 'linux':
     path = '/home/milesx/datasets/deeplens/'
@@ -53,6 +54,7 @@ ground_test_loader = DataLoader(ground_test_dataset, pin_memory=not has_cuda)
 
 
 ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
+ema = EMA(polyak_decay, ssl_lens_net, has_cuda=has_cuda)
 
 #labeled_loss = nn.BCEWithLogitsLoss()
 labeled_loss = nn.CrossEntropyLoss()
@@ -87,7 +89,7 @@ def whiten_norm(images):
     return images
 
 
-if torch.cuda.is_available():
+if has_cuda:
     device = torch.device("cuda:0")
     ssl_lens_net.to(device)
 else:
@@ -178,6 +180,7 @@ for epoch in range(num_epochs):
             epoch_loss[i, 3] = loss.item()
         loss.backward()
         optimizer.step()
+        ema.update()
 
         # print(loss, unlabeled_loss)
 
@@ -189,6 +192,16 @@ for epoch in range(num_epochs):
           f"unlabeled loss: {loss_mean[1].item()}, "
           f"SNTG loss: {loss_mean[2].item()}, "
           f"total loss: {loss_mean[3].item()}")
+
+    #eval_images, eval_is_lens, _, _ = eval_iter.next()
+    #print(eval_images.size(), eval_is_lens.size())
+    for i, data in enumerate(ground_eval_loader, epoch):
+        images, is_lens, _, _ = data
+        eval_logits, eval_h_embed = ema(images)
+        test_acc = torch.mean(torch.argmax(
+            eval_logits, 1).eq(is_lens).float())
+        print(f"evaluation accuracy: {test_acc.item()}")
+        break
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
