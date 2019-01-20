@@ -14,11 +14,15 @@ import resnet_ssl_model as rsm
 
 if sys.platform == 'linux':
     path = '/home/milesx/datasets/deeplens/'
-    save_path = os.path.join(path, 'saved_model')
 else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
+save_path = os.path.join(path, 'saved_model')
 n_train_data = 512
 n_eval_data = 128
+test_offset = 10000
+test_len = 1000
+run_eval = True
+run_test = False
 batch_size = 128
 num_classes = 2
 num_epochs = 3
@@ -43,6 +47,9 @@ ground_eval_dataset = gbd.GroundBasedDataset(path, offset=n_train_data,
                                              length=n_eval_data)
 ground_eval_loader = DataLoader(ground_eval_dataset, batch_size=batch_size,
                                 shuffle=False, pin_memory=not has_cuda)
+ground_test_dataset = gbd.GroundBasedDataset(path, offset=test_offset,
+                                             length=test_len)
+ground_test_loader = DataLoader(ground_test_dataset, pin_memory=not has_cuda)
 
 
 ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
@@ -190,3 +197,8 @@ file_name = 'ground_based' + \
         '-',
         timespec='minutes').replace(':', '-') + '.pth'
 torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
+
+
+test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
+test_net.load_state_dict(torch.load(os.path.join(save_path, file_name)))
+test_net.eval()
