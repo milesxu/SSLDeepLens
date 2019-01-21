@@ -45,7 +45,11 @@ augment_translation = 2
 unsup_wght = 0.0
 whiten_inputs = 'norm'  # norm, zca
 polyak_decay = 0.999
+
+torch.manual_seed(770715)
 has_cuda = torch.cuda.is_available()
+if has_cuda:
+    torch.cuda.manual_seed_all(770715)
 composed = transforms.Compose(
     [Clamp(1e-9, 100), WhitenInput(),
      AugmentTranslate(augment_translation, 101)])
