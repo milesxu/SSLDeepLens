@@ -12,7 +12,7 @@ from torchvision import transforms
 import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
-from data_transforms import Clamp
+from data_transforms import Clamp, AugmentTranslate, BatchPadding, WhitenInput
 from ema import EMA
 
 if sys.platform == 'linux':
@@ -20,7 +20,7 @@ if sys.platform == 'linux':
 else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
 save_path = os.path.join(path, 'saved_model')
-n_train_data = 512
+n_train_data = 1024
 n_eval_data = 128
 test_offset = 10000
 test_len = 1000
@@ -28,7 +28,7 @@ run_eval = True
 run_test = False
 batch_size = 128
 num_classes = 2
-num_epochs = 3
+num_epochs = 9
 rampup_length = 80
 rampdown_length = 50
 learning_rate = 0.003
@@ -43,19 +43,25 @@ unsup_wght = 0.0
 whiten_inputs = 'norm'  # norm, zca
 polyak_decay = 0.999
 has_cuda = torch.cuda.is_available()
-composed = transforms.Compose([Clamp(1e-9, 100)])
+composed = transforms.Compose(
+    [Clamp(1e-9, 100), WhitenInput(),
+     AugmentTranslate(augment_translation, 101)])
+batch_composed = transforms.Compose([BatchPadding(augment_translation)])
 ground_train_dataset = gbd.GroundBasedDataset(path, length=n_train_data,
                                               transform=composed)
+                                            #   batch_transform=batch_composed)
 ground_train_loader = DataLoader(ground_train_dataset, batch_size=batch_size,
                                  shuffle=True, pin_memory=not has_cuda)
 ground_eval_dataset = gbd.GroundBasedDataset(path, offset=n_train_data,
                                              length=n_eval_data,
                                              transform=composed)
+                                            #  batch_transform=batch_composed)
 ground_eval_loader = DataLoader(ground_eval_dataset, batch_size=batch_size,
                                 shuffle=False, pin_memory=not has_cuda)
 ground_test_dataset = gbd.GroundBasedDataset(path, offset=test_offset,
                                              length=test_len,
                                              transform=composed)
+                                            #  batch_transform=batch_composed)
 ground_test_loader = DataLoader(ground_test_dataset, pin_memory=not has_cuda)
 
 
@@ -89,10 +95,10 @@ def adam_param_update(optimizer: opt.Adam, epoch):
                           group['betas'][1])
 
 
-def whiten_norm(images):
-    images -= torch.mean(images, (1, 2, 3), True)
-    images /= torch.mean(images ** 2, (1, 2, 3), True) ** 0.5
-    return images
+# def whiten_norm(images):
+#     images -= torch.mean(images, (1, 2, 3), True)
+#     images /= torch.mean(images ** 2, (1, 2, 3), True) ** 0.5
+#     return images
 
 
 if has_cuda:
@@ -127,26 +133,28 @@ for epoch in range(num_epochs):
         #mask = mask.to(cuda_device)
         #indices = indices.to(cuda_device)
 
-        if whiten_inputs:
-            if whiten_inputs == 'norm':
-                images = whiten_norm(images)
-            elif whiten_inputs == 'zca':
-                from zca_norm import ZCA
-                whitener = ZCA(x=images)
-                images = whitener.apply(images)
+        # if whiten_inputs:
+        #     if whiten_inputs == 'norm':
+        #         images = whiten_norm(images)
+        #     elif whiten_inputs == 'zca':
+        #         from zca_norm import ZCA
+        #         whitener = ZCA(x=images)
+        #         images = whitener.apply(images)
 
-        if augment_translation:
-            p2d = tuple([augment_translation] * 4)
-            images = F.pad(images, p2d, 'reflect')
-            # print(images.size())
-            crop, n_xl = augment_translation, 101
-            for image in images:
-                if augment_mirror and np.random.uniform() > 0.5:
-                    # image = image[:, :, ::-1]
-                    image = torch.flip(image, [2])
-                ofs0 = np.random.randint(0, 2 * crop + 1)
-                ofs1 = np.random.randint(0, 2 * crop + 1)
-                image = image[:, ofs0:ofs0 + n_xl, ofs1:ofs1 + n_xl]
+        # if augment_translation:
+        #     aug = AugmentTranslate(augment_translation, 101)
+        #     aug(images)
+        #     p2d = tuple([augment_translation] * 4)
+        #     images = F.pad(images, p2d, 'reflect')
+        #     # print(images.size())
+        #     crop, n_xl = augment_translation, 101
+        #     for image in images:
+        #         if augment_mirror and np.random.uniform() > 0.5:
+        #             # image = image[:, :, ::-1]
+        #             image = torch.flip(image, [2])
+        #         ofs0 = np.random.randint(0, 2 * crop + 1)
+        #         ofs1 = np.random.randint(0, 2 * crop + 1)
+        #         image = image[:, ofs0:ofs0 + n_xl, ofs1:ofs1 + n_xl]
 
         targets = torch.index_select(target_pred, 0, indices)
 
