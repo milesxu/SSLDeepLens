@@ -122,7 +122,7 @@ epoch_pred = t_one.new_empty(
 epoch_mask = t_one.new_empty(
     (n_train_data), dtype=torch.float32, device=device)
 epoch_loss = t_one.new_empty(
-    (batch_size, 4), dtype=torch.float32, device=device)
+    (n_train_data // batch_size, 4), dtype=torch.float32, device=device)
 
 
 for epoch in range(num_epochs):
@@ -214,6 +214,7 @@ for epoch in range(num_epochs):
 
     ensemble_pred = pred_decay * ensemble_pred + (1 - pred_decay) * epoch_pred
     targets_pred = ensemble_pred / (1.0 - pred_decay ** (epoch + 1))
+    print(epoch_loss)
     loss_mean = torch.mean(epoch_loss, 0)
     print(f"epoch {epoch}, time cosumed: {time.time() + train_time}, "
           f"labeled loss: {loss_mean[0].item()}, "
