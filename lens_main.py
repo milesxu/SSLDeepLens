@@ -169,6 +169,7 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
 
         outputs, h_x = ssl_lens_net(images)
+        print(torch.mean(h_x))
         predicts = F.softmax(outputs, dim=1)
 
         # update for ensemble
