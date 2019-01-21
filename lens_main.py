@@ -50,6 +50,7 @@ torch.manual_seed(770715)
 has_cuda = torch.cuda.is_available()
 if has_cuda:
     torch.cuda.manual_seed_all(770715)
+    torch.backends.cudnn.deterministic=True
 composed = transforms.Compose(
     [Clamp(1e-9, 100), WhitenInput(),
      AugmentTranslate(augment_translation, 101)])
