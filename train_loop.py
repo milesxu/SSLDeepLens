@@ -6,7 +6,7 @@ import torch.optim as opt
 import torch.nn.functional as F
 
 
-class TrainLoop(object):
+class SNTGRunLoop(object):
     def __init__(self, net, dataloader, params, device, update_fn):
         self.net = net
         self.loader = dataloader
