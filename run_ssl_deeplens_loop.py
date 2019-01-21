@@ -62,8 +62,8 @@ def params_update(params):
             tf.greater_equal(epoch, params['num_epochs'] - params['rampdown']),
             lambda: rampdown(epoch), lambda: tf.constant(1.0))
         learning_rate = params['lr'] * ru * rd
-        adam_beta =
-        rd * params['adam_beta1'] + (1.0 - rd) params['rd_beta_target']
+        adam_beta = \
+            rd * params['adam_beta1'] + (1.0 - rd) params['rd_beta_target']
         unsup_wght = tf.cond(
             tf.equal(epoch, 0),
             lambda: ru * params['scale_unsup_wght_max'], lambda: 0.0)

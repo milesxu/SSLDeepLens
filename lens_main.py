@@ -24,16 +24,19 @@ n_train_data = 1024
 n_eval_data = 128
 test_offset = 10000
 test_len = 1000
-run_eval = True
+run_eval = False
 run_test = False
 batch_size = 128
+#batch_size = 10
 num_classes = 2
-num_epochs = 9
+#num_epochs = 9
+num_epochs = 2
 rampup_length = 80
 rampdown_length = 50
 learning_rate = 0.003
 pred_decay = 0.6
 embed = True
+#embed = False
 embed_coeff = 0.2
 adam_beta1 = 0.9
 rd_beta1_target = 0.5
@@ -209,15 +212,16 @@ for epoch in range(num_epochs):
           f"SNTG loss: {loss_mean[2].item()}, "
           f"total loss: {loss_mean[3].item()}")
 
+    if run_eval:
     #eval_images, eval_is_lens, _, _ = eval_iter.next()
     #print(eval_images.size(), eval_is_lens.size())
-    for i, data_batched in enumerate(ground_eval_loader, epoch):
-        images, is_lens = data_batched['image'], data_batched['is_lens']
-        eval_logits, eval_h_embed = ema(images)
-        test_acc = torch.mean(torch.argmax(
-            eval_logits, 1).eq(is_lens).float())
-        print(f"evaluation accuracy: {test_acc.item()}")
-        break
+        for i, data_batched in enumerate(ground_eval_loader, epoch):
+            images, is_lens = data_batched['image'], data_batched['is_lens']
+            eval_logits, eval_h_embed = ema(images)
+            test_acc = torch.mean(torch.argmax(
+                eval_logits, 1).eq(is_lens).float())
+            print(f"evaluation accuracy: {test_acc.item()}")
+            break
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
@@ -227,7 +231,7 @@ file_name = 'ground_based' + \
         timespec='minutes').replace(':', '-') + '.pth'
 torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
 
-
-test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
-test_net.load_state_dict(torch.load(os.path.join(save_path, file_name)))
-test_net.eval()
+if run_test:
+    test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
+    test_net.load_state_dict(torch.load(os.path.join(save_path, file_name)))
+    test_net.eval()
