@@ -183,6 +183,7 @@ for epoch in range(num_epochs):
         labeled_mask = mask.eq(0)
         #print(f'labeled: {labeled_mask} and unlabeled: {mask}')
         loss = labeled_loss(outputs[labeled_mask], is_lens[labeled_mask])
+        print(loss.item())
         epoch_loss[i, 0] = loss.item()
 
         # unlabeled loss
