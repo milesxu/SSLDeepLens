@@ -9,7 +9,8 @@ cat = None
 
 
 class GroundBasedDataset(Dataset):
-    def __init__(self, root_path, offset=0, length=20000, mask_rate=0.5):
+    def __init__(self, root_path, offset=0, length=20000, mask_rate=0.5,
+                 transform=None):
         global cat
         if cat is None:
             cat = self.load_ground_based_data(root_path)
@@ -25,6 +26,7 @@ class GroundBasedDataset(Dataset):
         self.mask = torch.zeros(length, dtype=torch.uint8)
         self.make_mask()
         self.indices = torch.as_tensor(range(offset, offset+length))
+        self.transform = transform
         if torch.cuda.is_available():
             cuda_device = torch.device("cuda:0")
             self.image = self.image.to(cuda_device)
