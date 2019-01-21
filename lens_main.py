@@ -8,9 +8,11 @@ import torch.optim as opt
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
+from torchvision import transforms
 import numpy as np
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
+from data_transforms import Clamp
 from ema import EMA
 
 if sys.platform == 'linux':
@@ -41,15 +43,19 @@ unsup_wght = 0.0
 whiten_inputs = 'norm'  # norm, zca
 polyak_decay = 0.999
 has_cuda = torch.cuda.is_available()
-ground_train_dataset = gbd.GroundBasedDataset(path, length=n_train_data)
+composed = transforms.Compose([Clamp(1e-9, 100)])
+ground_train_dataset = gbd.GroundBasedDataset(path, length=n_train_data,
+                                              transform=composed)
 ground_train_loader = DataLoader(ground_train_dataset, batch_size=batch_size,
                                  shuffle=True, pin_memory=not has_cuda)
 ground_eval_dataset = gbd.GroundBasedDataset(path, offset=n_train_data,
-                                             length=n_eval_data)
+                                             length=n_eval_data,
+                                             transform=composed)
 ground_eval_loader = DataLoader(ground_eval_dataset, batch_size=batch_size,
                                 shuffle=False, pin_memory=not has_cuda)
 ground_test_dataset = gbd.GroundBasedDataset(path, offset=test_offset,
-                                             length=test_len)
+                                             length=test_len,
+                                             transform=composed)
 ground_test_loader = DataLoader(ground_test_dataset, pin_memory=not has_cuda)
 
 
@@ -112,8 +118,10 @@ for epoch in range(num_epochs):
     # epoch_loss.zero_()
     adam_param_update(optimizer, epoch)
 
-    for i, data in enumerate(ground_train_loader, 0):
-        images, is_lens, mask, indices = data
+    for i, data_batched in enumerate(ground_train_loader, 0):
+        images, is_lens, mask, indices = \
+            data_batched['image'], data_batched['is_lens'], \
+            data_batched['mask'], data_batched['index']
         #images = images.to(cuda_device)
         #is_lens = is_lens.to(cuda_device)
         #mask = mask.to(cuda_device)
@@ -195,8 +203,8 @@ for epoch in range(num_epochs):
 
     #eval_images, eval_is_lens, _, _ = eval_iter.next()
     #print(eval_images.size(), eval_is_lens.size())
-    for i, data in enumerate(ground_eval_loader, epoch):
-        images, is_lens, _, _ = data
+    for i, data_batched in enumerate(ground_eval_loader, epoch):
+        images, is_lens = data_batched['image'], data_batched['is_lens']
         eval_logits, eval_h_embed = ema(images)
         test_acc = torch.mean(torch.argmax(
             eval_logits, 1).eq(is_lens).float())

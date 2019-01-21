@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 
 
 def conv3x3(in_channels, out_channels, stride=1):
@@ -124,6 +125,16 @@ class ResNetSSL(nn.Module):
         input = input.view(input.size(0), -1)
 
         return self.fc(input), input
+
+
+class SNTGModel(nn.Module):
+    def __init__(self, nn='resnet50'):
+        super(SNTGModel, self).__init__()
+        if nn == 'resnet50':
+            self.nn = models.resnet50()
+
+    def forward(self, input):
+        pass
 
 
 if __name__ == "__main__":

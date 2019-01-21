@@ -20,7 +20,7 @@ class GroundBasedDataset(Dataset):
         self.labels = 2
         self.image = torch.from_numpy(
             np.array(cat['image'][offset:offset + length])).float()
-        self.data_preprocess()
+        # self.data_preprocess()
         self.is_lens = torch.from_numpy(
             np.array(cat['is_lens'][offset:offset+length]))
         self.mask = torch.zeros(length, dtype=torch.uint8)
@@ -38,12 +38,16 @@ class GroundBasedDataset(Dataset):
         return self.length
 
     def __getitem__(self, index):
-        # sample = {'image': self.image[index],
-        #           'is_lens': self.is_lens[index],
-        #           'mask': self.mask[index],
-        #           'index': index}
-        return self.image[index], self.is_lens[index], self.mask[index], \
-            self.indices[index]
+        sample = {'image': self.image[index],
+                  'is_lens': self.is_lens[index],
+                  'mask': self.mask[index],
+                  'index': self.indices[index]}
+        # return self.image[index], self.is_lens[index], self.mask[index], \
+        #     self.indices[index]
+        if self.transform:
+            #sample = self.transform(sample)
+            sample['image'] = self.transform(sample)
+        return sample
 
     def load_ground_based_data(self, root_path):
         root_path = os.path.join(root_path, 'GroundBasedTraining')
@@ -65,12 +69,12 @@ class GroundBasedDataset(Dataset):
             cat.write(hdfile, path='/ground', append=True)
             return cat
 
-    def data_preprocess(self):
-        vmin, vmax, scale = -1e-9, 1e-9, 100
-        mask = self.image.eq(100)
-        self.image[mask] = 0
-        self.image.clamp_(vmin, vmax)
-        self.image.div_(vmax * scale)
+    # def data_preprocess(self):
+    #     vmin, vmax, scale = -1e-9, 1e-9, 100
+    #     mask = self.image.eq(100)
+    #     self.image[mask] = 0
+    #     self.image.clamp_(vmin, vmax)
+    #     self.image.div_(vmax * scale)
 
     def make_mask(self):
         mask_count = int(self.length * self.mask_rate)
