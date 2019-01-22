@@ -93,6 +93,7 @@ class SNTGRunLoop(object):
                     loss += embed_loss * \
                         self.params['unsup_wght'] * self.params['embed_coeff']
                     self.epoch_loss[i, 3] = loss.item()
+                    train_loss.append(loss.item())
                 loss.backward()
                 self.optimizer.step()
                 self.ema.update()
@@ -109,6 +110,7 @@ class SNTGRunLoop(object):
                   f"SNTG loss: {loss_mean[2].item()}, "
                   f"total loss: {loss_mean[3].item()}")
 
+            # eval phase
             for i, data_batched in enumerate(self.eval_loader, epoch):
                 images, is_lens = data_batched['image'], data_batched['is_lens']
                 eval_logits, eval_h_embed = self.ema(images)
@@ -116,6 +118,8 @@ class SNTGRunLoop(object):
                     eval_logits, 1).eq(is_lens).float())
                 print(f"evaluation accuracy: {test_acc.item()}")
                 break
+
+            return train_loss
 
     def test(self):
         pass
