@@ -10,7 +10,7 @@ cat = None
 
 class GroundBasedDataset(Dataset):
     def __init__(self, root_path, offset=0, length=20000, mask_rate=0.5,
-                 transform=None, batch_transform=None):
+                 transform=None):
         global cat
         if cat is None:
             cat = self.load_ground_based_data(root_path)
@@ -79,6 +79,10 @@ class GroundBasedDataset(Dataset):
     #     self.image.div_(vmax * scale)
 
     def make_mask(self):
+        '''
+        This function will not modify self.is_lens
+        So currently we do not use the label of training or not 
+        '''
         mask_count = int(self.length * self.mask_rate)
         shuf_id = torch.randperm(self.length)
         count = [0, 0]
