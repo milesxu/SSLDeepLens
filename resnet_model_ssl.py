@@ -546,4 +546,4 @@ class ModelSSL(object):
             logits = tf.squeeze(inputs, axes)
             logits = tf.layers.dense(inputs=logits, units=self.num_classes)
             logits = tf.identity(logits, 'final_dense')
-          return logits, inputs
+        return logits, inputs

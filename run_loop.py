@@ -56,10 +56,12 @@ class SNTGRunLoop(object):
                     data_batched['mask'], data_batched['index']
 
                 targets = torch.index_select(self.target_pred, 0, indices)
+                # print(f"y value dimension:{is_lens.size()}")
 
                 self.optimizer.zero_grad()
 
                 outputs, h_x = self.net(images)
+                # print(f"output dimension: {outputs.size()}")
                 predicts = F.softmax(outputs, dim=1)
 
                 # update for ensemble
@@ -76,6 +78,15 @@ class SNTGRunLoop(object):
                 train_accs.append(train_acc)
                 # print(loss.item())
                 self.epoch_loss[i, 0] = loss.item()
+
+                one_hot = torch.zeros(
+                    len(is_lens[labeled_mask]), is_lens[labeled_mask].max()+1,
+                    device=self.device) \
+                    .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
+                # print(one_hot.size())
+                temp_loss = nn.BCEWithLogitsLoss()(
+                    outputs[labeled_mask], one_hot)
+                print(temp_loss.item())
 
                 # unlabeled loss
                 unlabeled_loss = torch.mean((predicts - targets)**2)
