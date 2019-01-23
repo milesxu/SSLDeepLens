@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as opt
 import torch.nn.functional as F
+from sklearn.metrics import roc_curve, roc_auc_score
 from ema import EMA
 
 
@@ -17,6 +18,7 @@ class SNTGRunLoop(object):
         self.net = net
         self.loader = dataloader
         self.eval_loader = eval_loader
+        self.test_loader = test_loader
         self.params = params
         self.device = device
         self.net.to(device)
@@ -28,16 +30,18 @@ class SNTGRunLoop(object):
             (n_data, num_classes), dtype=torch.float32, device=device)
         self.epoch_mask = t_one.new_empty(
             (n_data), dtype=torch.float32, device=device)
-        self.epoch_loss = t_one.new_empty(
-            (n_data // params['batch_size'], 4), dtype=torch.float32, device=device)
+        self.epoch_loss = t_one.new_empty((n_data // params['batch_size'], 4),
+                                          dtype=torch.float32, device=device)
         self.optimizer = opt.Adam(self.net.parameters())
         self.update_fn = update_fn
         self.ema = EMA(params['polyak_decay'], self.net, has_cuda)
+        self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self):
         self.net.train()
-        labeled_loss = nn.CrossEntropyLoss()
-        train_loss = []
+        #labeled_loss = nn.CrossEntropyLoss()
+        train_losses, train_accs = [], []
+        eval_losses, eval_accs = [], []
         for epoch in range(self.params['num_epochs']):
             # training phase
             train_time = -time.time()
@@ -65,8 +69,11 @@ class SNTGRunLoop(object):
 
                 # labeled loss
                 labeled_mask = mask.eq(0)
-                loss = labeled_loss(
+                loss = self.loss_fn(
                     outputs[labeled_mask], is_lens[labeled_mask])
+                train_acc = torch.mean(torch.argmax(
+                    outputs[labeled_mask], 1).eq(is_lens[labeled_mask]).float())
+                train_accs.append(train_acc)
                 # print(loss.item())
                 self.epoch_loss[i, 0] = loss.item()
 
@@ -93,7 +100,6 @@ class SNTGRunLoop(object):
                     loss += embed_loss * \
                         self.params['unsup_wght'] * self.params['embed_coeff']
                     self.epoch_loss[i, 3] = loss.item()
-                    train_loss.append(loss.item())
                 loss.backward()
                 self.optimizer.step()
                 self.ema.update()
@@ -104,6 +110,7 @@ class SNTGRunLoop(object):
             self.targets_pred = self.ensemble_pred / \
                 (1.0 - self.params['pred_decay'] ** (epoch + 1))
             loss_mean = torch.mean(self.epoch_loss, 0)
+            train_losses.append(loss_mean[3].item())
             print(f"epoch {epoch}, time cosumed: {time.time() + train_time}, "
                   f"labeled loss: {loss_mean[0].item()}, "
                   f"unlabeled loss: {loss_mean[1].item()}, "
@@ -111,15 +118,25 @@ class SNTGRunLoop(object):
                   f"total loss: {loss_mean[3].item()}")
 
             # eval phase
-            for i, data_batched in enumerate(self.eval_loader, epoch):
-                images, is_lens = data_batched['image'], data_batched['is_lens']
-                eval_logits, eval_h_embed = self.ema(images)
-                test_acc = torch.mean(torch.argmax(
-                    eval_logits, 1).eq(is_lens).float())
-                print(f"evaluation accuracy: {test_acc.item()}")
-                break
+            if self.eval_loader is not None:
+                for i, data_batched in enumerate(self.eval_loader, epoch):
+                    images, is_lens = \
+                        data_batched['image'], data_batched['is_lens']
+                    # currently h_x in evalization is not used
+                    eval_logits, _ = self.ema(images)
+                    test_acc = torch.mean(torch.argmax(
+                        eval_logits, 1).eq(is_lens).float())
+                    eval_accs.append(test_acc.item())
+                    print(f"evaluation accuracy: {test_acc.item()}")
+                    eval_loss = self.loss_fn(eval_logits, is_lens)
+                    eval_losses.append(eval_loss.item())
+                    break
 
-            return train_loss
+        return train_losses, train_accs, eval_losses, eval_accs
 
     def test(self):
-        pass
+        self.net.eval()
+        for i, data_batched in enumerate(self.test_loader, 0):
+            images, is_lens = data_batched['image'], data_batched['is_lens']
+            test_logits, _ = self.net(images)
+            return roc_curve(is_lens, test_logits)
