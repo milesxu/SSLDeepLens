@@ -131,10 +131,22 @@ class SNTGModel(nn.Module):
     def __init__(self, nn='resnet50'):
         super(SNTGModel, self).__init__()
         if nn == 'resnet50':
-            self.nn = models.resnet50()
+            self.model = models.resnet50()
 
     def forward(self, input):
-        pass
+        x = self.model.conv1(input)
+        x = self.model.bn1(x)
+        x = self.model.relu(x)
+        x = self.model.maxpool(x)
+
+        x = self.model.layer1(x)
+        x = self.model.layer2(x)
+        x = self.model.layer3(x)
+        x = self.model.layer4(x)
+
+        x = self.model.avgpool(x)
+        x = x.view(x.size(0), -1)
+        return self.model.fc(x), x
 
 
 if __name__ == "__main__":
