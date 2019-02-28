@@ -35,7 +35,7 @@ class SNTGRunLoop(object):
         self.optimizer = opt.Adam(self.net.parameters())
         self.update_fn = update_fn
         self.ema = EMA(params['polyak_decay'], self.net, has_cuda)
-        self.loss_fn = nn.CrossEntropyLoss()
+        # self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self):
         self.net.train()
@@ -71,22 +71,22 @@ class SNTGRunLoop(object):
 
                 # labeled loss
                 labeled_mask = mask.eq(0)
-                loss = self.loss_fn(
-                    outputs[labeled_mask], is_lens[labeled_mask])
+                # loss = self.loss_fn(
+                # outputs[labeled_mask], is_lens[labeled_mask])
+                # labeled loss with binary entropy with logits, use one_hot
+                one_hot = torch.zeros(
+                    len(is_lens[labeled_mask]), is_lens[labeled_mask].max()+1,
+                    device=self.device) \
+                    .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
+                loss = F.binary_cross_entropy_with_logits(outputs[labeled_mask],
+                                                          one_hot)
+                # print(loss.item())
+
                 train_acc = torch.mean(torch.argmax(
                     outputs[labeled_mask], 1).eq(is_lens[labeled_mask]).float())
                 train_accs.append(train_acc)
                 # print(loss.item())
                 self.epoch_loss[i, 0] = loss.item()
-
-                one_hot = torch.zeros(
-                    len(is_lens[labeled_mask]), is_lens[labeled_mask].max()+1,
-                    device=self.device) \
-                    .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
-                # print(one_hot.size())
-                temp_loss = nn.BCEWithLogitsLoss()(
-                    outputs[labeled_mask], one_hot)
-                print(temp_loss.item())
 
                 # unlabeled loss
                 unlabeled_loss = torch.mean((predicts - targets)**2)
@@ -139,7 +139,13 @@ class SNTGRunLoop(object):
                         eval_logits, 1).eq(is_lens).float())
                     eval_accs.append(test_acc.item())
                     print(f"evaluation accuracy: {test_acc.item()}")
-                    eval_loss = self.loss_fn(eval_logits, is_lens)
+                    eval_lens = torch.zeros(
+                        len(is_lens), is_lens.max()+1,
+                        device=self.device) \
+                        .scatter_(1, is_lens.unsqueeze(1), 1.)
+                    # eval_loss = self.loss_fn(eval_logits, is_lens)
+                    eval_loss = F.binary_cross_entropy_with_logits(eval_logits,
+                                                                   eval_lens)
                     eval_losses.append(eval_loss.item())
                     break
 
