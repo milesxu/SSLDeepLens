@@ -128,10 +128,13 @@ class ResNetSSL(nn.Module):
 
 
 class SNTGModel(nn.Module):
-    def __init__(self, nn='resnet50'):
+    def __init__(self, channels, nn_type='resnet50'):
         super(SNTGModel, self).__init__()
-        if nn == 'resnet50':
-            self.model = models.resnet50()
+        if nn_type == 'resnet50':
+            self.model = models.resnet50(num_classes=2)
+        self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=7, stride=2,
+                                     padding=3, bias=False)
+        self.model.avgpool = nn.AvgPool2d(4, stride=1)
 
     def forward(self, input):
         x = self.model.conv1(input)

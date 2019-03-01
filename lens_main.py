@@ -68,7 +68,7 @@ ground_test_loader = DataLoader(
 
 
 # ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
-ssl_lens_net = rsm.SNTGModel()
+ssl_lens_net = rsm.SNTGModel(4)
 
 # labeled_loss = nn.BCEWithLogitsLoss()
 
