@@ -6,7 +6,7 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms
 import ground_based_dataset as gbd
 import resnet_ssl_model as rsm
-from data_transforms import Clamp, AugmentTranslate, WhitenInput
+from data_transforms import Log10, Clamp, AugmentTranslate, WhitenInput
 from run_loop import SNTGRunLoop
 from learning_rate_update import learning_rate_update
 
@@ -45,7 +45,7 @@ if has_cuda:
     torch.cuda.manual_seed_all(770715)
     torch.backends.cudnn.deterministic = True
 train_composed = transforms.Compose(
-    [Clamp(1e-9, 100), WhitenInput(),
+    [Log10(), Clamp(1e-9, 100), WhitenInput(),
      AugmentTranslate(train_params['augment_translation'], 101)])
 test_composed = transforms.Compose([Clamp(1e-9, 100), WhitenInput()])
 ground_train_dataset = gbd.GroundBasedDataset(

@@ -3,6 +3,17 @@ import torch.nn.functional as F
 import numpy as np
 
 
+class Log10(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, sample):
+        image = sample['image']
+        image.log10_()
+        sample['image'] = image
+        return sample
+
+
 class Clamp(object):
     def __init__(self, bound, scale):
         self.bound = abs(bound)
