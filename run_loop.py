@@ -35,11 +35,12 @@ class SNTGRunLoop(object):
         self.optimizer = opt.Adam(self.net.parameters())
         self.update_fn = update_fn
         self.ema = EMA(params['polyak_decay'], self.net, has_cuda)
+        self.unsup_weight = 0.0
         # self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self):
         self.net.train()
-        #labeled_loss = nn.CrossEntropyLoss()
+        # labeled_loss = nn.CrossEntropyLoss()
         train_losses, train_accs = [], []
         eval_losses, eval_accs = [], []
         for epoch in range(self.params['num_epochs']):
@@ -47,8 +48,8 @@ class SNTGRunLoop(object):
             train_time = -time.time()
             self.epoch_pred.zero_()
             self.epoch_mask.zero_()
-            # epoch_loss.zero_()
-            self.update_fn(self.optimizer, epoch)
+            # self.epoch_loss.zero_()
+            self.unsup_weight = self.update_fn(self.optimizer, epoch)
 
             for i, data_batched in enumerate(self.loader, 0):
                 images, is_lens, mask, indices = \
@@ -80,10 +81,16 @@ class SNTGRunLoop(object):
                     .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
                 loss = F.binary_cross_entropy_with_logits(outputs[labeled_mask],
                                                           one_hot)
+                # one_hot = torch.zeros(
+                #     len(is_lens), is_lens.max() + 1, device=self.device) \
+                #     .scatter_(1, is_lens.unsqueeze(1), 1.)
+                # loss = F.binary_cross_entropy_with_logits(outputs, one_hot)
                 # print(loss.item())
 
                 train_acc = torch.mean(torch.argmax(
                     outputs[labeled_mask], 1).eq(is_lens[labeled_mask]).float())
+                # train_acc = torch.mean(
+                #     torch.argmax(outputs, 1).eq(is_lens).float())
                 train_accs.append(train_acc)
                 # print(loss.item())
                 self.epoch_loss[i, 0] = loss.item()
@@ -91,7 +98,7 @@ class SNTGRunLoop(object):
                 # unlabeled loss
                 unlabeled_loss = torch.mean((predicts - targets)**2)
                 self.epoch_loss[i, 1] = unlabeled_loss.item()
-                loss += unlabeled_loss * self.params['unsup_wght']
+                loss += unlabeled_loss * self.unsup_weight
 
                 # SNTG loss
                 if self.params['embed']:
@@ -109,14 +116,13 @@ class SNTGRunLoop(object):
                     embed_loss = torch.mean(embed_losses)
                     self.epoch_loss[i, 2] = embed_loss.item()
                     loss += embed_loss * \
-                        self.params['unsup_wght'] * self.params['embed_coeff']
+                        self.unsup_weight * self.params['embed_coeff']
                     self.epoch_loss[i, 3] = loss.item()
                 loss.backward()
                 self.optimizer.step()
                 self.ema.update()
 
-            self.ensemble_pred = \
-                self.params['pred_decay'] * self.ensemble_pred + \
+            self.ensemble_pred = self.params['pred_decay'] * self.ensemble_pred + \
                 (1 - self.params['pred_decay']) * self.epoch_pred
             self.targets_pred = self.ensemble_pred / \
                 (1.0 - self.params['pred_decay'] ** (epoch + 1))
@@ -127,12 +133,13 @@ class SNTGRunLoop(object):
                   f"unlabeled loss: {loss_mean[1].item()}, "
                   f"SNTG loss: {loss_mean[2].item()}, "
                   f"total loss: {loss_mean[3].item()}")
+            # print(f"epoch {epoch}, time consumed: {time.time() + train_time}, "
+            #       f"labeled loss: {loss_mean[0].item()}")
 
             # eval phase
             if self.eval_loader is not None:
                 for i, data_batched in enumerate(self.eval_loader, epoch):
-                    images, is_lens = \
-                        data_batched['image'], data_batched['is_lens']
+                    images, is_lens = data_batched['image'], data_batched['is_lens']
                     # currently h_x in evalization is not used
                     eval_logits, _ = self.ema(images)
                     test_acc = torch.mean(torch.argmax(
