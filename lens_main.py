@@ -11,12 +11,12 @@ from run_loop import SNTGRunLoop
 from learning_rate_update import learning_rate_update
 
 if sys.platform == 'linux':
-    path = '/home/milesx/datasets/deeplens/'
+    path = '/home/mingx/datasets/'
 else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
 save_path = os.path.join(path, 'saved_model')
 train_params = {
-    'n_data': 1024,
+    'n_data': 5120,
     'num_classes': 2,
     'batch_size': 128,
     'n_eval_data': 128,
@@ -45,7 +45,7 @@ if has_cuda:
     torch.cuda.manual_seed_all(770715)
     torch.backends.cudnn.deterministic = True
 train_composed = transforms.Compose(
-    [Log10(), Clamp(1e-9, 100), WhitenInput(),
+    [WhitenInput(),
      AugmentTranslate(train_params['augment_translation'], 101)])
 test_composed = transforms.Compose([Clamp(1e-9, 100), WhitenInput()])
 ground_train_dataset = gbd.GroundBasedDataset(
