@@ -43,6 +43,7 @@ class SNTGRunLoop(object):
         # labeled_loss = nn.CrossEntropyLoss()
         train_losses, train_accs = [], []
         eval_losses, eval_accs = [], []
+        ema_eval_losses, ema_eval_accs = [], []
         for epoch in range(self.params['num_epochs']):
             # training phase
             train_time = -time.time()
@@ -123,7 +124,8 @@ class SNTGRunLoop(object):
                 self.optimizer.step()
                 self.ema.update()
 
-            self.ensemble_pred = self.params['pred_decay'] * self.ensemble_pred + \
+            self.ensemble_pred = \
+                self.params['pred_decay'] * self.ensemble_pred + \
                 (1 - self.params['pred_decay']) * self.epoch_pred
             self.targets_pred = self.ensemble_pred / \
                 (1.0 - self.params['pred_decay'] ** (epoch + 1))
@@ -139,25 +141,38 @@ class SNTGRunLoop(object):
 
             # eval phase
             if self.eval_loader is not None:
-                for i, data_batched in enumerate(self.eval_loader, epoch):
-                    images, is_lens = data_batched['image'], data_batched['is_lens']
+                for i, data_batched in enumerate(self.eval_loader, 0):
+                    images, is_lens = data_batched['image'], \
+                        data_batched['is_lens']
                     # currently h_x in evalization is not used
                     eval_logits, _ = self.ema(images)
-                    test_acc = torch.mean(torch.argmax(
+                    ema_eval_acc = torch.mean(torch.argmax(
                         eval_logits, 1).eq(is_lens).float())
-                    eval_accs.append(test_acc.item())
-                    print(f"evaluation accuracy: {test_acc.item()}")
+                    ema_eval_accs.append(ema_eval_acc.item())
+                    # print(f"ema evaluation accuracy: {ema_eval_acc.item()}")
                     eval_lens = torch.zeros(
                         len(is_lens), is_lens.max()+1,
                         device=self.device) \
                         .scatter_(1, is_lens.unsqueeze(1), 1.)
                     # eval_loss = self.loss_fn(eval_logits, is_lens)
-                    eval_loss = F.binary_cross_entropy_with_logits(eval_logits,
-                                                                   eval_lens)
+                    ema_eval_loss = F.binary_cross_entropy_with_logits(
+                        eval_logits, eval_lens)
+                    ema_eval_losses.append(ema_eval_loss.item())
+                    # break
+                    # none ema evaluation
+                    self.net.eval()
+                    eval_logits, _ = self.net(images)
+                    eval_acc = torch.mean(torch.argmax(
+                        eval_logits, 1).eq(is_lens).float())
+                    eval_accs.append(eval_acc.item())
+                    # print(f"evaluation accuracy: {eval_acc.item()}")
+                    eval_loss = F.binary_cross_entropy_with_logits(
+                        eval_logits, eval_lens)
                     eval_losses.append(eval_loss.item())
-                    break
+                print(f"ema ")
 
-        return train_losses, train_accs, eval_losses, eval_accs
+        return train_losses, train_accs, eval_losses, eval_accs, \
+            ema_eval_losses, ema_eval_accs
 
     def test(self):
         self.net.eval()
