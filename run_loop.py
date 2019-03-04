@@ -63,7 +63,8 @@ class SNTGRunLoop(object):
 
                 outputs, h_x = self.net(images)
                 # print(f"output dimension: {outputs.size()}")
-                predicts = F.softmax(outputs, dim=1)
+                # predicts = F.softmax(outputs, dim=1)
+                predicts = F.softmax(outputs)
 
                 # update for ensemble
                 for k, j in enumerate(indices):
@@ -82,8 +83,8 @@ class SNTGRunLoop(object):
                 loss = F.binary_cross_entropy_with_logits(outputs[labeled_mask],
                                                           one_hot)
                 # one_hot = torch.zeros(
-                #     len(is_lens), is_lens.max() + 1, device=self.device) \
-                #     .scatter_(1, is_lens.unsqueeze(1), 1.)
+                #      len(is_lens), is_lens.max() + 1, device=self.device) \
+                #      .scatter_(1, is_lens.unsqueeze(1), 1.)
                 # loss = F.binary_cross_entropy_with_logits(outputs, one_hot)
                 # print(loss.item())
 
@@ -101,23 +102,23 @@ class SNTGRunLoop(object):
                 loss += unlabeled_loss * self.unsup_weight
 
                 # SNTG loss
-                if self.params['embed']:
-                    half = int(h_x.size()[0] // 2)
-                    eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
-                    eucd = torch.sqrt(eucd2)
-                    target_hard = torch.argmax(targets, dim=1).int()
-                    merged_tar = torch.where(
-                        mask == 0, target_hard, is_lens.int())
-                    neighbor_bool = torch.eq(
-                        merged_tar[:half], merged_tar[half:])
-                    eucd_y = torch.where(eucd < 1.0, (1.0 - eucd) ** 2,
-                                         torch.zeros_like(eucd))
-                    embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
-                    embed_loss = torch.mean(embed_losses)
-                    self.epoch_loss[i, 2] = embed_loss.item()
-                    loss += embed_loss * \
-                        self.unsup_weight * self.params['embed_coeff']
-                    self.epoch_loss[i, 3] = loss.item()
+                # if self.params['embed']:
+                #     half = int(h_x.size()[0] // 2)
+                #     eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
+                #     eucd = torch.sqrt(eucd2)
+                #     target_hard = torch.argmax(targets, dim=1).int()
+                #     merged_tar = torch.where(
+                #         mask == 0, target_hard, is_lens.int())
+                #     neighbor_bool = torch.eq(
+                #         merged_tar[:half], merged_tar[half:])
+                #     eucd_y = torch.where(eucd < 1.0, (1.0 - eucd) ** 2,
+                #                          torch.zeros_like(eucd))
+                #     embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
+                #     embed_loss = torch.mean(embed_losses)
+                #     self.epoch_loss[i, 2] = embed_loss.item()
+                #     loss += embed_loss * \
+                #         self.unsup_weight * self.params['embed_coeff']
+                self.epoch_loss[i, 3] = loss.item()
                 loss.backward()
                 self.optimizer.step()
                 self.ema.update()

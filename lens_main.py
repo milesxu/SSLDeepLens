@@ -18,13 +18,13 @@ save_path = os.path.join(path, 'saved_model')
 train_params = {
     'n_data': 5120,
     'num_classes': 2,
-    'batch_size': 128,
+    'batch_size': 256,
     'n_eval_data': 128,
     'test_offset': 10000,
     'test_len': 1000,
     'run_eval': True,
     'run_test': False,
-    'num_epochs': 9,
+    'num_epochs': 100,
     'rampup_length': 80,
     'rampdown_length': 50,
     'learning_rate': 0.003,
@@ -45,7 +45,7 @@ if has_cuda:
     torch.cuda.manual_seed_all(770715)
     torch.backends.cudnn.deterministic = True
 train_composed = transforms.Compose(
-    [WhitenInput(), Clamp(1e-9, 100)],
+    [WhitenInput(), Clamp(1e-9, 100),
      AugmentTranslate(train_params['augment_translation'], 101)])
 test_composed = transforms.Compose([WhitenInput(), Clamp(1e-9, 100)])
 ground_train_dataset = gbd.GroundBasedDataset(
@@ -75,8 +75,8 @@ ssl_lens_net = rsm.SNTGModel(4)
 lr_fn = learning_rate_update(
     train_params['rampup_length'], train_params['rampdown_length'],
     train_params['learning_rate'], train_params['adam_beta1'],
-    # train_params['rd_beta1_target'], train_params['num_epochs']
-    train_params['rd_beta1_target'], 100
+    train_params['rd_beta1_target'], train_params['num_epochs']
+    # train_params['rd_beta1_target'], 100
 )
 
 rnssl_run_loop = SNTGRunLoop(
