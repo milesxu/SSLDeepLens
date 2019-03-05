@@ -39,13 +39,13 @@ class SNTGRunLoop(object):
         # self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self):
-        self.net.train()
         # labeled_loss = nn.CrossEntropyLoss()
         train_losses, train_accs = [], []
         eval_losses, eval_accs = [], []
         ema_eval_losses, ema_eval_accs = [], []
         for epoch in range(self.params['num_epochs']):
             # training phase
+            self.net.train()
             train_time = -time.time()
             self.epoch_pred.zero_()
             self.epoch_mask.zero_()
@@ -140,6 +140,8 @@ class SNTGRunLoop(object):
 
             # eval phase
             if self.eval_loader is not None:
+                # none ema evaluation
+                self.net.eval()
                 for i, data_batched in enumerate(self.eval_loader, 0):
                     images, is_lens = data_batched['image'], \
                         data_batched['is_lens']
@@ -158,8 +160,6 @@ class SNTGRunLoop(object):
                         eval_logits, eval_lens)
                     ema_eval_losses.append(ema_eval_loss.item())
                     # break
-                    # none ema evaluation
-                    self.net.eval()
                     eval_logits, _ = self.net(images)
                     eval_acc = torch.mean(torch.argmax(
                         eval_logits, 1).eq(is_lens).float())
