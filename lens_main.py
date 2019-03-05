@@ -1,6 +1,8 @@
 import os
 import sys
 import datetime
+import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms
@@ -84,15 +86,23 @@ rnssl_run_loop = SNTGRunLoop(
     eval_loader=ground_eval_loader, test_loader=ground_test_loader,
     has_cuda=has_cuda)
 
-rnssl_run_loop.train()
+train_losses, train_accs, eval_losses, eval_accs, \
+    ema_eval_losses, ema_eval_accs = rnssl_run_loop.train()
 # rnssl_run_loop.test()
-
+loss_df = pd.DataFrame(
+    data={'epoch': np.arange(train_params['num_epochs']),
+          'train loss': train_losses, 'evaluation loss': eval_losses,
+          'ema evaluation loss': ema_eval_losses})
+acc_df = pd.DataFrame(
+    data={'epoch': np.arange(train_params['num_epochs']),
+          'train accuracy': train_accs, 'evaluation accuracy': eval_accs,
+          'ema evaluation accuracy': ema_eval_accs})
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
-file_name = 'ground_based' + \
-    datetime.datetime.now().isoformat(
-        '-', timespec='minutes').replace(':', '-') + '.pth'
+file_name = 'ground_based' +
+datetime.datetime.now().isoformat(
+    '-', timespec='minutes').replace(':', '-') + '.pth'
 torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
 
 # test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
