@@ -103,22 +103,22 @@ class SNTGRunLoop(object):
                 loss += unlabeled_loss * self.unsup_weight
 
                 # SNTG loss
-                # if self.params['embed']:
-                #     half = int(h_x.size()[0] // 2)
-                #     eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
-                #     eucd = torch.sqrt(eucd2)
-                #     target_hard = torch.argmax(targets, dim=1).int()
-                #     merged_tar = torch.where(
-                #         mask == 0, target_hard, is_lens.int())
-                #     neighbor_bool = torch.eq(
-                #         merged_tar[:half], merged_tar[half:])
-                #     eucd_y = torch.where(eucd < 1.0, (1.0 - eucd) ** 2,
-                #                          torch.zeros_like(eucd))
-                #     embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
-                #     embed_loss = torch.mean(embed_losses)
-                #     self.epoch_loss[i, 2] = embed_loss.item()
-                #     loss += embed_loss * \
-                #         self.unsup_weight * self.params['embed_coeff']
+                if self.params['embed']:
+                    half = int(h_x.size()[0] // 2)
+                    eucd2 = torch.mean((h_x[:half] - h_x[half:])**2, dim=1)
+                    eucd = torch.sqrt(eucd2)
+                    target_hard = torch.argmax(targets, dim=1).int()
+                    merged_tar = torch.where(
+                        mask == 0, target_hard, is_lens.int())
+                    neighbor_bool = torch.eq(
+                        merged_tar[:half], merged_tar[half:])
+                    eucd_y = torch.where(eucd < 1.0, (1.0 - eucd) ** 2,
+                                         torch.zeros_like(eucd))
+                    embed_losses = torch.where(neighbor_bool, eucd2, eucd_y)
+                    embed_loss = torch.mean(embed_losses)
+                    self.epoch_loss[i, 2] = embed_loss.item()
+                    loss += embed_loss * \
+                        self.unsup_weight * self.params['embed_coeff']
                 self.epoch_loss[i, 3] = loss.item()
                 loss.backward()
                 self.optimizer.step()
@@ -169,7 +169,10 @@ class SNTGRunLoop(object):
                     eval_loss = F.binary_cross_entropy_with_logits(
                         eval_logits, eval_lens)
                     eval_losses.append(eval_loss.item())
-                print(f"ema ")
+                print(f"ema accuracy: "
+                      f"{torch.mean(torch.tensor(ema_eval_losses)).item()}, "
+                      f"normal accuracy: "
+                      f"{torch.mean(torch.tensor(eval_accs)).item()}")
 
         return train_losses, train_accs, eval_losses, eval_accs, \
             ema_eval_losses, ema_eval_accs
