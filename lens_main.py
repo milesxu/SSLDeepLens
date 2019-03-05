@@ -24,7 +24,7 @@ train_params = {
     'test_len': 1000,
     'run_eval': True,
     'run_test': False,
-    'num_epochs': 300,
+    'num_epochs': 100,
     'rampup_length': 80,
     'rampdown_length': 50,
     'learning_rate': 0.003,

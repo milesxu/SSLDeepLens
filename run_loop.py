@@ -169,7 +169,7 @@ class SNTGRunLoop(object):
                         eval_logits, eval_lens)
                     eval_losses.append(eval_loss.item())
                 print(f"ema accuracy: "
-                      f"{torch.mean(torch.tensor(ema_eval_losses)).item()}, "
+                      f"{torch.mean(torch.tensor(ema_eval_accs)).item()}, "
                       f"normal accuracy: "
                       f"{torch.mean(torch.tensor(eval_accs)).item()}")
 
