@@ -99,8 +99,10 @@ class SNTGRunLoop(object):
                 # loss = F.binary_cross_entropy_with_logits(outputs, one_hot)
                 # print(loss.item())
 
-                self.train_epoch_acc[i] = torch.mean(torch.argmax(
-                    outputs[labeled_mask], 1).eq(is_lens[labeled_mask]).float())
+                self.train_epoch_acc[i] = \
+                    torch.mean(torch.argmax(
+                        outputs[labeled_mask], 1).eq(is_lens[labeled_mask])
+                    .float()).item()
                 # train_acc = torch.mean(
                 #     torch.argmax(outputs, 1).eq(is_lens).float())
                 self.train_epoch_loss[i, 0] = loss.item()
@@ -159,7 +161,7 @@ class SNTGRunLoop(object):
                     # currently h_x in evalization is not used
                     eval_logits, _ = self.ema(images)
                     self.eval_epoch_acc[i, 0] = torch.mean(torch.argmax(
-                        eval_logits, 1).eq(is_lens).float())
+                        eval_logits, 1).eq(is_lens).float()).item()
                     # print(f"ema evaluation accuracy: {ema_eval_acc.item()}")
                     eval_lens = torch.zeros(
                         len(is_lens), is_lens.max()+1,
@@ -168,15 +170,15 @@ class SNTGRunLoop(object):
                     # eval_loss = self.loss_fn(eval_logits, is_lens)
                     self.eval_epoch_loss[i, 0] = \
                         F.binary_cross_entropy_with_logits(
-                        eval_logits, eval_lens)
+                        eval_logits, eval_lens).item()
                     # break
                     eval_logits, _ = self.net(images)
                     self.eval_epoch_acc[i, 1] = torch.mean(torch.argmax(
-                        eval_logits, 1).eq(is_lens).float())
+                        eval_logits, 1).eq(is_lens).float()).item()
                     # print(f"evaluation accuracy: {eval_acc.item()}")
                     self.eval_epoch_loss[i, 1] = \
                         F.binary_cross_entropy_with_logits(
-                        eval_logits, eval_lens)
+                        eval_logits, eval_lens).item()
                 loss_mean = torch.mean(self.eval_epoch_loss, 0)
                 acc_mean = torch.mean(self.eval_epoch_acc, 0)
                 ema_eval_accs.append(acc_mean[0].item())
