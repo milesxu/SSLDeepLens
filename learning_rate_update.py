@@ -3,7 +3,7 @@ import torch.optim as opt
 
 
 def learning_rate_update(rampup_length, rampdown_length, learning_rate,
-                         adam_beta1, rd_beta1_target, num_epochs, scale=0.01):
+                         adam_beta1, rd_beta1_target, num_epochs, scale=0.0):
     def rampup(epoch):
         if epoch < rampup_length:
             p = 1.0 - epoch / rampup_length
