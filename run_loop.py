@@ -76,16 +76,16 @@ class SNTGRunLoop(object):
                 # loss = self.loss_fn(
                 # outputs[labeled_mask], is_lens[labeled_mask])
                 # labeled loss with binary entropy with logits, use one_hot
-                one_hot = torch.zeros(
-                    len(is_lens[labeled_mask]), is_lens[labeled_mask].max()+1,
-                    device=self.device) \
-                    .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
-                loss = F.binary_cross_entropy_with_logits(outputs[labeled_mask],
-                                                          one_hot)
                 # one_hot = torch.zeros(
-                #      len(is_lens), is_lens.max() + 1, device=self.device) \
-                #      .scatter_(1, is_lens.unsqueeze(1), 1.)
-                # loss = F.binary_cross_entropy_with_logits(outputs, one_hot)
+                #     len(is_lens[labeled_mask]), is_lens[labeled_mask].max()+1,
+                #     device=self.device) \
+                #     .scatter_(1, is_lens[labeled_mask].unsqueeze(1), 1.)
+                # loss = F.binary_cross_entropy_with_logits(outputs[labeled_mask],
+                #                                           one_hot)
+                one_hot = torch.zeros(
+                    len(is_lens), is_lens.max() + 1, device=self.device) \
+                    .scatter_(1, is_lens.unsqueeze(1), 1.)
+                loss = F.binary_cross_entropy_with_logits(outputs, one_hot)
                 # print(loss.item())
 
                 train_acc = torch.mean(torch.argmax(
