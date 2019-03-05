@@ -50,7 +50,7 @@ class SNTGRunLoop(object):
             self.epoch_pred.zero_()
             self.epoch_mask.zero_()
             # self.epoch_loss.zero_()
-            self.unsup_weight = self.update_fn(self.optimizer, epoch)
+            # self.unsup_weight = self.update_fn(self.optimizer, epoch)
 
             for i, data_batched in enumerate(self.loader, 0):
                 images, is_lens, mask, indices = \
