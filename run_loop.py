@@ -64,8 +64,7 @@ class SNTGRunLoop(object):
 
                 outputs, h_x = self.net(images)
                 # print(f"output dimension: {outputs.size()}")
-                # predicts = F.softmax(outputs, dim=1)
-                predicts = F.softmax(outputs)
+                predicts = F.softmax(outputs, dim=1)
 
                 # update for ensemble
                 for k, j in enumerate(indices):
