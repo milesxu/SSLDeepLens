@@ -18,7 +18,7 @@ save_path = os.path.join(path, 'saved_model')
 train_params = {
     'n_data': 5120,
     'num_classes': 2,
-    'batch_size': 256,
+    'batch_size': 128,
     'n_eval_data': 1024,
     'test_offset': 10000,
     'test_len': 1000,
