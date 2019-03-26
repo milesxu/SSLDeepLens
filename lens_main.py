@@ -12,6 +12,7 @@ from data_transforms import Log10, Clamp, AugmentTranslate, WhitenInput
 from run_loop import SNTGRunLoop
 from learning_rate_update import learning_rate_update
 
+path = ''
 if sys.platform == 'linux':
     path = '/home/mingx/datasets/'
 else:
@@ -100,9 +101,9 @@ acc_df = pd.DataFrame(
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
-file_name = 'ground_based' +
-datetime.datetime.now().isoformat(
-    '-', timespec='minutes').replace(':', '-') + '.pth'
+file_name = 'ground_based' + \
+    datetime.datetime.now().isoformat(
+        '-', timespec='minutes').replace(':', '-') + '.pth'
 torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
 
 # test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
