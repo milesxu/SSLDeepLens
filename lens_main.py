@@ -2,6 +2,7 @@ import os
 import sys
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 from torch.utils.data.dataloader import DataLoader
