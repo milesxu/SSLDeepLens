@@ -100,12 +100,12 @@ result = pd.DataFrame(
 
 # show result
 fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(20, 10))
-data.plot(x='epoch', y='train loss', color='C1', ax=ax1)
-data.plot(x='epoch', y='evaluation loss', color='C2', ax=ax1)
-data.plot(x='epoch', y='ema evaluation loss', color='C3', ax=ax1)
-data.plot(x='epoch', y='train accuracy', color='C1', ax=ax2)
-data.plot(x='epoch', y='evaluation accuracy', color='C2', ax=ax2)
-data.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
+result.plot(x='epoch', y='train loss', color='C1', ax=ax1)
+result.plot(x='epoch', y='evaluation loss', color='C2', ax=ax1)
+result.plot(x='epoch', y='ema evaluation loss', color='C3', ax=ax1)
+result.plot(x='epoch', y='train accuracy', color='C1', ax=ax2)
+result.plot(x='epoch', y='evaluation accuracy', color='C2', ax=ax2)
+result.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
