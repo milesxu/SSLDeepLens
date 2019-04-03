@@ -28,7 +28,7 @@ train_params = {
     'test_len': 1000,
     'run_eval': True,
     'run_test': False,
-    'num_epochs': 100,
+    'num_epochs': 50,
     'rampup_length': 80,
     'rampdown_length': 50,
     'learning_rate': 0.003,
@@ -91,21 +91,33 @@ rnssl_run_loop = SNTGRunLoop(
 train_losses, train_accs, eval_losses, eval_accs, \
     ema_eval_losses, ema_eval_accs = rnssl_run_loop.train()
 # rnssl_run_loop.test()
-loss_df = pd.DataFrame(
+result = pd.DataFrame(
     data={'epoch': np.arange(train_params['num_epochs']),
           'train loss': train_losses, 'evaluation loss': eval_losses,
-          'ema evaluation loss': ema_eval_losses})
-acc_df = pd.DataFrame(
-    data={'epoch': np.arange(train_params['num_epochs']),
+          'ema evaluation loss': ema_eval_losses,
           'train accuracy': train_accs, 'evaluation accuracy': eval_accs,
           'ema evaluation accuracy': ema_eval_accs})
 
+# show result
+fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(20, 10))
+data.plot(x='epoch', y='train loss', color='C1', ax=ax1)
+data.plot(x='epoch', y='evaluation loss', color='C2', ax=ax1)
+data.plot(x='epoch', y='ema evaluation loss', color='C3', ax=ax1)
+data.plot(x='epoch', y='train accuracy', color='C1', ax=ax2)
+data.plot(x='epoch', y='evaluation accuracy', color='C2', ax=ax2)
+data.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
+
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
-file_name = 'ground_based' + \
+plot_file_name = 'ground_based' + \
+    datetime.datetime.now.isoformat('-', timespec='minutes').replace(':', '-') \
+    + '.png'
+plt.savefig(os.path.join(save_path, plot_file_name))
+
+arg_file_name = 'ground_based' + \
     datetime.datetime.now().isoformat(
         '-', timespec='minutes').replace(':', '-') + '.pth'
-torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, file_name))
+torch.save(ssl_lens_net.state_dict(), os.path.join(save_path, arg_file_name))
 
 # test_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
 # test_net.load_state_dict(torch.load(os.path.join(save_path, file_name)))
