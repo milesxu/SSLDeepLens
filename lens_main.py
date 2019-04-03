@@ -28,7 +28,7 @@ train_params = {
     'test_len': 1000,
     'run_eval': True,
     'run_test': False,
-    'num_epochs': 50,
+    'num_epochs': 100,
     'rampup_length': 80,
     'rampdown_length': 50,
     'learning_rate': 0.003,
@@ -110,8 +110,8 @@ result.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
 if not os.path.isdir(save_path):
     os.mkdir(save_path)
 plot_file_name = 'ground_based' + \
-    datetime.datetime.now.isoformat('-', timespec='minutes').replace(':', '-') \
-    + '.png'
+    datetime.datetime.now().isoformat(
+        '-', timespec='minutes').replace(':', '-') + '.png'
 plt.savefig(os.path.join(save_path, plot_file_name))
 
 arg_file_name = 'ground_based' + \
