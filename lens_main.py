@@ -20,7 +20,7 @@ else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
 save_path = os.path.join(path, 'saved_model')
 train_params = {
-    'n_data': 2048,
+    'n_data': 5120,
     'num_classes': 2,
     'batch_size': 128,
     'n_eval_data': 1024,
