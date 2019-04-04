@@ -20,7 +20,7 @@ else:
     path = 'C:\\Users\\miles\\Documents\\dataset'
 save_path = os.path.join(path, 'saved_model')
 train_params = {
-    'n_data': 5120,
+    'n_data': 2048,
     'num_classes': 2,
     'batch_size': 128,
     'n_eval_data': 1024,
@@ -102,10 +102,10 @@ result = pd.DataFrame(
 fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(20, 10))
 result.plot(x='epoch', y='train loss', color='C1', ax=ax1)
 result.plot(x='epoch', y='evaluation loss', color='C2', ax=ax1)
-result.plot(x='epoch', y='ema evaluation loss', color='C3', ax=ax1)
+# result.plot(x='epoch', y='ema evaluation loss', color='C3', ax=ax1)
 result.plot(x='epoch', y='train accuracy', color='C1', ax=ax2)
 result.plot(x='epoch', y='evaluation accuracy', color='C2', ax=ax2)
-result.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
+# result.plot(x='epoch', y='ema evaluation accuracy', color='C3', ax=ax2)
 
 if not os.path.isdir(save_path):
     os.mkdir(save_path)

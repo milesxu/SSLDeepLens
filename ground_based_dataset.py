@@ -9,7 +9,7 @@ cat = None
 
 
 class GroundBasedDataset(Dataset):
-    def __init__(self, root_path, offset=0, length=20000, mask_rate=0.5,
+    def __init__(self, root_path, offset=0, length=20000, mask_rate=0.0,
                  transform=None):
         global cat
         if cat is None:
