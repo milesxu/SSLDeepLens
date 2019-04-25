@@ -1,11 +1,28 @@
 <ul nz-menu [nzMode]="'horizontal'">
   <li nz-menu-item>
-    <b>Strong Lens Classification Demo</b>
+    <b>Please select arguments for testing process:</b>
   </li>
-  <li nz-menu-item><i nz-icon type="mail"></i> Navigation One</li>
-  <li nz-menu-item nzDisabled><i nz-icon type="appstore"></i> Navigation Two</li>
-  <li nz-submenu>
-    <span title><i nz-icon type="setting"></i> Navigation Three - Submenu</span>
+  <li nz-menu-item><i nz-icon type="database"></i> Dataset Type
+    <nz-select style="width: 120px;" [(ngModel)]="dataset" nzAllowClear nzPlaceHolder="Choose" [nzSize]="size">
+      <nz-option nzValue="sky" nzLabel="Sky based"></nz-option>
+      <nz-option nzValue="ground" nzLabel="Ground based"></nz-option>
+    </nz-select>
+  </li>
+  <li nz-menu-item><i nz-icon type="download"></i> Number of Images<nz-select style="width: 120px;"
+      [(ngModel)]="imageNum" nzAllowClear nzPlaceHolder="Choose" [nzSize]="size">
+      <nz-option nzValue="1024" nzLabel="1024"></nz-option>
+      <nz-option nzValue="2048" nzLabel="2048"></nz-option>
+    </nz-select>
+  </li>
+  <li nz-menu-item>
+    <i nz-icon type="setting"></i>
+    <nz-switch [ngModel]="true" nzCheckedChildren="With" nzUnCheckedChildren="Without"></nz-switch> GPU
+  </li>
+  <!--<li nz-submenu>
+    <span title><i nz-icon type="setting"></i>
+      Navigation Three -
+      Submenu
+    </span>
     <ul>
       <li nz-menu-group>
         <span title>Item 1</span>
@@ -36,8 +53,14 @@
         </ul>
       </li>
     </ul>
+  </li>-->
+  <li nz-menu-item><i nz-icon type="deployment-unit"></i>
+    <nz-switch [ngModel]="true" nzCheckedChildren="Enhanced" nzUnCheckedChildren="Normal"></nz-switch>
+    CNN Model
   </li>
   <li nz-menu-item>
-    <a href="https://ng.ant.design" target="_blank" rel="noopener noreferrer">Navigation Four - Link</a>
+    <button nz-button nzType="primary" [nzSize]="size">
+      <i nz-icon type="fire"></i>Run
+    </button>
   </li>
 </ul>

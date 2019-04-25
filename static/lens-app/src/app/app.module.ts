@@ -11,11 +11,13 @@ import { registerLocaleData } from '@angular/common';
 import en from '@angular/common/locales/en';
 import { MainMenuComponent } from './main-menu/main-menu.component';
 import { GalleryComponent } from './gallery/gallery.component';
+import { ResultTableComponent } from './result-table/result-table.component';
+import { RecordsComponent } from './records/records.component';
 
 registerLocaleData(en);
 
 @NgModule({
-  declarations: [AppComponent, MainMenuComponent, GalleryComponent],
+  declarations: [AppComponent, MainMenuComponent, GalleryComponent, ResultTableComponent, RecordsComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,

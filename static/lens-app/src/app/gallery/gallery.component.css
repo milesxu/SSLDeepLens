@@ -1,5 +1,10 @@
 div {
   margin: 10px;
   background: #ECECEC;
-  height: 600px;
+  height: 400px;
+}
+
+h1 {
+  text-align: center;
+  padding-top: 100px;
 }

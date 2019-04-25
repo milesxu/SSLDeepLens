@@ -4,4 +4,8 @@ import { Component } from '@angular/core';
   selector: 'app-main-menu',
   templateUrl: './main-menu.component.html'
 })
-export class MainMenuComponent {}
+export class MainMenuComponent {
+  dataset = 'sky';
+  size = 'small';
+  imageNum = 1024;
+}
