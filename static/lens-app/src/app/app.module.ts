@@ -9,13 +9,13 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { registerLocaleData } from '@angular/common';
 import en from '@angular/common/locales/en';
+import { MainMenuComponent } from './main-menu/main-menu.component';
+import { GalleryComponent } from './gallery/gallery.component';
 
 registerLocaleData(en);
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [AppComponent, MainMenuComponent, GalleryComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -27,4 +27,4 @@ registerLocaleData(en);
   providers: [{ provide: NZ_I18N, useValue: en_US }],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}
