@@ -5,6 +5,7 @@
 /tmp
 /out-tsc
 /src/assets/combine123
+/src/assets/combine123.tar.gz
 
 # dependencies
 /node_modules
