@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Record } from '../record';
+import { RecordService } from '../record.service';
 
 @Component({
   selector: 'app-records',
@@ -20,9 +22,6 @@ export class RecordsComponent {
   ];
   listOfSearchName: string[] = [];
   listOfData: Array<{
-    name: string;
-    age: number;
-    address: string;
     id: number;
     dataset: string;
     processor: string;
@@ -32,11 +31,8 @@ export class RecordsComponent {
     speed: number;
     accuracy: number;
     [key: string]: string | number;
-  }> = [
-    {
-      name: 'John Brown',
-      age: 32,
-      address: 'New York No. 1 Lake Park',
+  }> = [];
+  /*{
       id: 1,
       dataset: 'Sky based',
       processor: 'CPU',
@@ -47,9 +43,6 @@ export class RecordsComponent {
       accuracy: 0.88
     },
     {
-      name: 'Jim Green',
-      age: 42,
-      address: 'London No. 1 Lake Park',
       id: 2,
       dataset: 'Ground based',
       processor: 'GPU',
@@ -60,9 +53,6 @@ export class RecordsComponent {
       accuracy: 0.92
     },
     {
-      name: 'Joe Black',
-      age: 32,
-      address: 'Sidney No. 1 Lake Park',
       id: 3,
       dataset: 'Sky based',
       processor: 'CPU',
@@ -73,9 +63,6 @@ export class RecordsComponent {
       accuracy: 0.88
     },
     {
-      name: 'Jim Red',
-      age: 32,
-      address: 'London No. 2 Lake Park',
       id: 4,
       dataset: 'Sky based',
       processor: 'CPU',
@@ -85,15 +72,20 @@ export class RecordsComponent {
       speed: 2.0,
       accuracy: 0.88
     }
-  ];
+  ];*/
   listOfDisplayData: Array<{
-    name: string;
-    age: number;
-    address: string;
+    id: number;
+    dataset: string;
+    processor: string;
+    algorithm: string;
+    images: number;
+    timing: number;
+    speed: number;
+    accuracy: number;
     [key: string]: string | number;
   }> = [...this.listOfData];
 
-  sort(sort: { key: string; value: string }): void {
+  /*sort(sort: { key: string; value: string }): void {
     this.sortName = sort.key;
     this.sortValue = sort.value;
     this.search();
@@ -106,7 +98,7 @@ export class RecordsComponent {
   }
 
   search(): void {
-    /** filter data **/
+    // filter data
     const filterFunc = (item: { name: string; age: number; address: string }) =>
       (this.searchAddress
         ? item.address.indexOf(this.searchAddress) !== -1
@@ -115,7 +107,7 @@ export class RecordsComponent {
         ? this.listOfSearchName.some(name => item.name.indexOf(name) !== -1)
         : true);
     const data = this.listOfData.filter(item => filterFunc(item));
-    /** sort data **/
+    //  sort data
     if (this.sortName && this.sortValue) {
       this.listOfDisplayData = data.sort((a, b) =>
         this.sortValue === 'ascend'
@@ -129,5 +121,23 @@ export class RecordsComponent {
     } else {
       this.listOfDisplayData = data;
     }
+  }*/
+
+  constructor(private recordService: RecordService) {
+    recordService.recordObservable.subscribe(record => {
+      console.log(record);
+      const id = this.listOfData.length + 1;
+      this.listOfData.push({
+        id: id,
+        dataset: record.dataset,
+        processor: record.processor,
+        algorithm: record.algorithm,
+        images: record.imageSize,
+        timing: record.timing,
+        speed: record.speed,
+        accuracy: record.accuracy
+      });
+      this.listOfDisplayData = [...this.listOfData];
+    });
   }
 }

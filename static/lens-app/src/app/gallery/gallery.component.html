@@ -1,8 +1,9 @@
-<div>
-  <h1>
-    Images will be showed here!
-  </h1>
-  <img src="assets/combine123/ground_based_100000.png">
+<div class="image-grid">
+  <img *ngFor="let image of batched_images" src="{{ image }}"
+       class="image-elem">
 </div>
-<!-- <mat-grid-list cols='20'
-       rowHeight="1:1"></mat-grid-list> -->
+<div class="paginator">
+  <nz-pagination [nzPageIndex]="index" [nzTotal]="length"
+                 [nzPageSize]="batch_len"
+                 (nzPageIndexChange)="changePageIndex($event)"></nz-pagination>
+</div>
