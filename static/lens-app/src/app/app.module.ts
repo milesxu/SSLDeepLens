@@ -13,11 +13,18 @@ import { MainMenuComponent } from './main-menu/main-menu.component';
 import { GalleryComponent } from './gallery/gallery.component';
 import { ResultTableComponent } from './result-table/result-table.component';
 import { RecordsComponent } from './records/records.component';
+// import { NzCarouselModule } from 'ng-zorro-antd';
 
 registerLocaleData(en);
 
 @NgModule({
-  declarations: [AppComponent, MainMenuComponent, GalleryComponent, ResultTableComponent, RecordsComponent],
+  declarations: [
+    AppComponent,
+    MainMenuComponent,
+    GalleryComponent,
+    ResultTableComponent,
+    RecordsComponent
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -25,6 +32,7 @@ registerLocaleData(en);
     FormsModule,
     HttpClientModule,
     BrowserAnimationsModule
+    // NzCarouselModule
   ],
   providers: [{ provide: NZ_I18N, useValue: en_US }],
   bootstrap: [AppComponent]

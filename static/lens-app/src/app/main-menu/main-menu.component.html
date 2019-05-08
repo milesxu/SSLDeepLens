@@ -3,20 +3,23 @@
     <b>Please select arguments for testing process:</b>
   </li>
   <li nz-menu-item><i nz-icon type="database"></i> Dataset Type
-    <nz-select style="width: 120px;" [(ngModel)]="dataset" nzAllowClear nzPlaceHolder="Choose" [nzSize]="size">
-      <nz-option nzValue="sky" nzLabel="Sky based"></nz-option>
+    <nz-select style="width: 120px;" [(ngModel)]="dataset" nzAllowClear
+               nzPlaceHolder="Choose" [nzSize]="size">
       <nz-option nzValue="ground" nzLabel="Ground based"></nz-option>
+      <nz-option nzValue="sky" nzLabel="Sky based"></nz-option>
     </nz-select>
   </li>
-  <li nz-menu-item><i nz-icon type="download"></i> Number of Images<nz-select style="width: 120px;"
-      [(ngModel)]="imageNum" nzAllowClear nzPlaceHolder="Choose" [nzSize]="size">
+  <li nz-menu-item><i nz-icon type="download"></i> Number of Images<nz-select
+               style="width: 120px;" [(ngModel)]="imageNum" nzAllowClear
+               nzPlaceHolder="Choose" [nzSize]="size">
       <nz-option nzValue="1024" nzLabel="1024"></nz-option>
       <nz-option nzValue="2048" nzLabel="2048"></nz-option>
     </nz-select>
   </li>
   <li nz-menu-item>
     <i nz-icon type="setting"></i>
-    <nz-switch [ngModel]="true" nzCheckedChildren="With" nzUnCheckedChildren="Without"></nz-switch> GPU
+    <nz-switch [ngModel]="true" nzCheckedChildren="With"
+               nzUnCheckedChildren="Without"></nz-switch> GPU
   </li>
   <!--<li nz-submenu>
     <span title><i nz-icon type="setting"></i>
@@ -55,8 +58,14 @@
     </ul>
   </li>-->
   <li nz-menu-item><i nz-icon type="deployment-unit"></i>
-    <nz-switch [ngModel]="true" nzCheckedChildren="Enhanced" nzUnCheckedChildren="Normal"></nz-switch>
-    CNN Model
+    <nz-switch [ngModel]="true" nzCheckedChildren="With"
+               nzUnCheckedChildren="Without"></nz-switch> Semi-Supervised
+    Learning (SNTG)
+  </li>
+  <li nz-menu-item>
+    <button nz-button nzType="primary" [nzSize]="size">
+      <i nz-icon type="reload"></i>Reload
+    </button>
   </li>
   <li nz-menu-item>
     <button nz-button nzType="primary" [nzSize]="size">
