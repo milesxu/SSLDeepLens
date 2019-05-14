@@ -20,7 +20,7 @@ export class GalleryComponent implements OnInit {
   constructor(private loadService: LoadService) {}
 
   ngOnInit() {
-    this.loadService.imageNumber.subscribe(num => {
+    this.loadService.imageNumber.subscribe((num: ImageNumber) => {
       this.start = num.start;
       this.length = num.length;
       this.base_name = num.baseName;
