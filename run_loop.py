@@ -15,13 +15,13 @@ class SNTGRunLoop(object):
             device = torch.device("cuda:0")
         else:
             device = torch.device('cpu')
-        self.net = net
+        self.net = net.to(device)
         self.loader = dataloader
         self.eval_loader = eval_loader
         self.test_loader = test_loader
         self.params = params
         self.device = device
-        self.net.to(device)
+        # self.net.to(device)
         if params is not None:
             n_data, num_classes = params['n_data'], params['num_classes']
             n_eval_data, batch_size = params['n_eval_data'], params['batch_size']
@@ -199,6 +199,12 @@ class SNTGRunLoop(object):
         with torch.no_grad():
             for i, data_batched in enumerate(self.test_loader, 0):
                 images, is_lens = data_batched['image'], data_batched['is_lens']
+                start = time.time()
                 test_logits, _ = self.net(images)
+                end = time.time()
+                result = torch.argmax(
+                    F.softmax(test_logits, dim=1), dim=1)
+                accuracy = torch.mean(result.eq(is_lens).float()).item()
                 # return roc_curve(is_lens, test_logits)
-                return test_logits, is_lens
+                return result.tolist(), is_lens.tolist(), end - start, \
+                    accuracy
