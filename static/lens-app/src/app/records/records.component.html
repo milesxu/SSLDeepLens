@@ -1,0 +1,36 @@
+<nz-table #filterTable [nzData]="listOfDisplayData" [nzFrontPagination]="false"
+          [nzShowPagination]="false">
+  <thead (nzSortChange)="sort($event)" nzSingleSort>
+    <tr>
+      <!--<th nzShowSort nzSortKey="name" nzShowFilter [nzFilters]="listOfName"
+        (nzFilterChange)="filter($event, searchAddress)">
+        Name
+      </th>
+      <th nzShowSort nzSortKey="age">Age</th>
+      <th nzShowSort nzSortKey="address" nzShowFilter [nzFilterMultiple]="false" [nzFilters]="listOfAddress"
+        (nzFilterChange)="filter(listOfSearchName, $event)">
+        Address
+      </th>-->
+      <th>ID</th>
+      <th>Dataset Type</th>
+      <th>Processor Type</th>
+      <th>Algorithm Type</th>
+      <th>Number of Images</th>
+      <th>Time Consumed</th>
+      <th>Average Speed</th>
+      <th>Accuracy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let data of filterTable.data">
+      <td>{{data.id}}</td>
+      <td>{{data.dataset}}</td>
+      <td>{{data.processor}}</td>
+      <td>{{data.algorithm}}</td>
+      <td>{{data.images}}</td>
+      <td>{{data.timing}}</td>
+      <td>{{data.speed}}</td>
+      <td>{{data.accuracy}}</td>
+    </tr>
+  </tbody>
+</nz-table>

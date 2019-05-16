@@ -1,0 +1,9 @@
+<div class="image-grid">
+  <img *ngFor="let image of batched_images" src="{{ image }}"
+       class="image-elem">
+</div>
+<div class="paginator">
+  <nz-pagination [(nzPageIndex)]="index" [nzTotal]="length"
+                 [nzPageSize]="batch_len"
+                 (nzPageIndexChange)="changePageIndex($event)"></nz-pagination>
+</div>

@@ -9,8 +9,8 @@ from ema import EMA
 
 
 class SNTGRunLoop(object):
-    def __init__(self, net, dataloader, params, update_fn, eval_loader=None,
-                 test_loader=None, has_cuda=True):
+    def __init__(self, net, dataloader=None, params=None, update_fn=None,
+                 eval_loader=None, test_loader=None, has_cuda=True):
         if has_cuda:
             device = torch.device("cuda:0")
         else:
@@ -22,31 +22,34 @@ class SNTGRunLoop(object):
         self.params = params
         self.device = device
         self.net.to(device)
-        n_data, num_classes = params['n_data'], params['num_classes']
-        n_eval_data, batch_size = params['n_eval_data'], params['batch_size']
-        self.ensemble_pred = torch.zeros((n_data, num_classes), device=device)
-        self.target_pred = torch.zeros((n_data, num_classes), device=device)
-        t_one = torch.ones(())
-        self.epoch_pred = t_one.new_empty(
-            (n_data, num_classes), dtype=torch.float32, device=device)
-        self.epoch_mask = t_one.new_empty(
-            (n_data), dtype=torch.float32, device=device)
-        self.train_epoch_loss = \
-            t_one.new_empty((n_data // batch_size, 4),
-                            dtype=torch.float32, device=device)
-        self.train_epoch_acc = \
-            t_one.new_empty((n_data // batch_size), dtype=torch.float32,
-                            device=device)
-        self.eval_epoch_loss = \
-            t_one.new_empty((n_eval_data // batch_size, 2),
-                            dtype=torch.float32, device=device)
-        self.eval_epoch_acc = \
-            t_one.new_empty((n_eval_data // batch_size, 2),
-                            dtype=torch.float32, device=device)
-        self.optimizer = opt.Adam(self.net.parameters())
-        self.update_fn = update_fn
-        self.ema = EMA(params['polyak_decay'], self.net, has_cuda)
-        self.unsup_weight = 0.0
+        if params is not None:
+            n_data, num_classes = params['n_data'], params['num_classes']
+            n_eval_data, batch_size = params['n_eval_data'], params['batch_size']
+            self.ensemble_pred = torch.zeros(
+                (n_data, num_classes), device=device)
+            self.target_pred = torch.zeros(
+                (n_data, num_classes), device=device)
+            t_one = torch.ones(())
+            self.epoch_pred = t_one.new_empty(
+                (n_data, num_classes), dtype=torch.float32, device=device)
+            self.epoch_mask = t_one.new_empty(
+                (n_data), dtype=torch.float32, device=device)
+            self.train_epoch_loss = \
+                t_one.new_empty((n_data // batch_size, 4),
+                                dtype=torch.float32, device=device)
+            self.train_epoch_acc = \
+                t_one.new_empty((n_data // batch_size), dtype=torch.float32,
+                                device=device)
+            self.eval_epoch_loss = \
+                t_one.new_empty((n_eval_data // batch_size, 2),
+                                dtype=torch.float32, device=device)
+            self.eval_epoch_acc = \
+                t_one.new_empty((n_eval_data // batch_size, 2),
+                                dtype=torch.float32, device=device)
+            self.optimizer = opt.Adam(self.net.parameters())
+            self.update_fn = update_fn
+            self.ema = EMA(params['polyak_decay'], self.net, has_cuda)
+            self.unsup_weight = 0.0
         # self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self):
@@ -196,4 +199,5 @@ class SNTGRunLoop(object):
         for i, data_batched in enumerate(self.test_loader, 0):
             images, is_lens = data_batched['image'], data_batched['is_lens']
             test_logits, _ = self.net(images)
-            return roc_curve(is_lens, test_logits)
+            # return roc_curve(is_lens, test_logits)
+            return test_logits

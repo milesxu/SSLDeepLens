@@ -10,7 +10,7 @@ cat = None
 
 class GroundBasedDataset(Dataset):
     def __init__(self, root_path, offset=0, length=20000, mask_rate=0.0,
-                 transform=None):
+                 transform=None, use_cuda=True):
         global cat
         if cat is None:
             cat = self.load_ground_based_data(root_path)
@@ -29,7 +29,7 @@ class GroundBasedDataset(Dataset):
         self.transform = transform
         # if batch_transform:
         #     self.image = batch_transform(self.image)
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and use_cuda:
             cuda_device = torch.device("cuda:0")
             self.image = self.image.to(cuda_device)
             self.is_lens = self.is_lens.to(cuda_device)
@@ -58,7 +58,7 @@ class GroundBasedDataset(Dataset):
             print('loading hdf5 file...')
             return Table.read(hdfile, path='/ground')
         else:
-            cat = Table.read(root_path + 'classifications.csv')
+            cat = Table.read(root_path + '/classifications.csv')
             ims = np.zeros((20000, 4, 101, 101))
             for i, id in enumerate(cat['ID']):
                 for j, b in enumerate(['R', 'I', 'G', 'U']):
