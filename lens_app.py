@@ -11,16 +11,16 @@ from run_loop import SNTGRunLoop
 
 torch.manual_seed(770715)
 torch.cuda.manual_seed_all(770715)
-# data_path = '/home/milesx/datasets/deeplens'
-data_path = '/home/mingx/datasets'
+data_path = '/home/milesx/datasets/deeplens'
+# data_path = '/home/mingx/datasets'
 test_composed = transforms.Compose([WhitenInput(), Clamp(1e-9, 100)])
 cpu_data = gbd.GroundBasedDataset(
     data_path, length=1, transform=test_composed, use_cuda=False)
 normal_net = rsm.SNTGModel(4)
 stng_net = rsm.SNTGModel(4)
-normal_model = 'saved_model/ground_based2019-03-03-22-18.pth'
+# normal_model = 'saved_model/ground_based2019-03-03-22-18.pth'
 stng_model = 'saved_model/ground_based2019-04-03-15-12.pth'
-normal_net.load_state_dict(torch.load(normal_model))
+# normal_net.load_state_dict(torch.load(normal_model))
 stng_net.load_state_dict(torch.load(stng_model))
 
 

@@ -12,7 +12,7 @@ class SNTGRunLoop(object):
     def __init__(self, net, dataloader=None, params=None, update_fn=None,
                  eval_loader=None, test_loader=None, has_cuda=True):
         if has_cuda:
-            device = torch.device("cuda:2")
+            device = torch.device("cuda:0")
         else:
             device = torch.device('cpu')
         self.net = net

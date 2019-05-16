@@ -30,7 +30,7 @@ class GroundBasedDataset(Dataset):
         # if batch_transform:
         #     self.image = batch_transform(self.image)
         if torch.cuda.is_available() and use_cuda:
-            cuda_device = torch.device("cuda:2")
+            cuda_device = torch.device("cuda:0")
             self.image = self.image.to(cuda_device)
             self.is_lens = self.is_lens.to(cuda_device)
             self.mask = self.mask.to(cuda_device)
