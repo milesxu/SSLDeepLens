@@ -196,4 +196,5 @@ class SNTGRunLoop(object):
         for i, data_batched in enumerate(self.test_loader, 0):
             images, is_lens = data_batched['image'], data_batched['is_lens']
             test_logits, _ = self.net(images)
-            return roc_curve(is_lens, test_logits)
+            # return roc_curve(is_lens, test_logits)
+            return test_logits
