@@ -12,7 +12,7 @@ class SNTGRunLoop(object):
     def __init__(self, net, dataloader=None, params=None, update_fn=None,
                  eval_loader=None, test_loader=None, has_cuda=True):
         if has_cuda:
-            device = torch.device("cuda:0")
+            device = torch.device("cuda:2")
         else:
             device = torch.device('cpu')
         self.net = net
@@ -196,8 +196,9 @@ class SNTGRunLoop(object):
 
     def test(self):
         self.net.eval()
-        for i, data_batched in enumerate(self.test_loader, 0):
-            images, is_lens = data_batched['image'], data_batched['is_lens']
-            test_logits, _ = self.net(images)
-            # return roc_curve(is_lens, test_logits)
-            return test_logits
+        with torch.no_grad():
+            for i, data_batched in enumerate(self.test_loader, 0):
+                images, is_lens = data_batched['image'], data_batched['is_lens']
+                test_logits, _ = self.net(images)
+                # return roc_curve(is_lens, test_logits)
+                return test_logits, is_lens
