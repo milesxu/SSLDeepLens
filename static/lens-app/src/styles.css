@@ -1,1 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
+::-webkit-scrollbar {
+  width: 5px;
+  box-shadow: inset 0 0 5px grey;
+  background: rgb(0, 110, 255);
+}

@@ -5,6 +5,7 @@ export class ImageNumber {
   baseName: string;
   start: number;
   length: number;
+  mask: number[];
 }
 
 @Injectable({
@@ -14,7 +15,8 @@ export class LoadService {
   private ImageNumberSource = new BehaviorSubject<ImageNumber>({
     baseName: 'assets/combine123/',
     start: 110000,
-    length: 1024
+    length: 1024,
+    mask: new Array(1024).fill(1)
   });
   imageNumber$ = this.ImageNumberSource.asObservable();
 
@@ -26,8 +28,13 @@ export class LoadService {
     this.ImageNumberSource.next({
       baseName: name,
       start: begin + offset,
-      length: imageNum
+      length: imageNum,
+      mask: new Array(imageNum).fill(1)
     });
+  }
+
+  reloadImageAfterRun(imgNum: ImageNumber) {
+    this.ImageNumberSource.next(imgNum);
   }
 
   constructor() {}

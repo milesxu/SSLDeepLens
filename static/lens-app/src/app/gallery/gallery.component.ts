@@ -12,6 +12,7 @@ export class GalleryComponent implements OnInit {
   start = 110000;
   // offset = 9000;
   length = 1024;
+  imageLen = this.length;
   batch_len = 128;
   batch_num = 8;
   images: string[] = [];
@@ -26,11 +27,14 @@ export class GalleryComponent implements OnInit {
       this.base_name = num.baseName;
       this.images = [];
       for (let i = 0; i < this.length; ++i) {
-        const image_name = `${this.base_name}ground_based_${this.start +
-          i}.png`;
-        this.images.push(image_name);
+        if (num.mask[i]) {
+          const image_name = `${this.base_name}ground_based_${this.start +
+            i}.png`;
+          this.images.push(image_name);
+        }
       }
-      this.batch_num = this.length / this.batch_len;
+      this.imageLen = this.images.length;
+      this.batch_num = this.imageLen / this.batch_len;
       this.batched_images = this.images.slice(0, this.batch_len);
       this.index = 1;
     });

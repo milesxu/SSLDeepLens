@@ -49,7 +49,7 @@ export class MainMenuComponent {
     const api_string = `${API_URL}/classify?processor=${processor.toLowerCase()}
     &model=${model}&length=${imageNumber.length}&start=${imageNumber.start -
       100000}`;
-    console.log(api_string);
+    // console.log(api_string);
     this.http.get<Result>(api_string).subscribe(result => {
       const speed = imageNumber.length / result.time;
       this.recordService.addRecord({
@@ -61,6 +61,8 @@ export class MainMenuComponent {
         speed: speed,
         accuracy: result.accuracy
       });
+      imageNumber.mask = result.result;
+      this.loadService.reloadImageAfterRun(imageNumber);
     });
   }
 }

@@ -3,7 +3,7 @@
        class="image-elem">
 </div>
 <div class="paginator">
-  <nz-pagination [(nzPageIndex)]="index" [nzTotal]="length"
+  <nz-pagination [(nzPageIndex)]="index" [nzTotal]="imageLen"
                  [nzPageSize]="batch_len"
                  (nzPageIndexChange)="changePageIndex($event)"></nz-pagination>
 </div>
