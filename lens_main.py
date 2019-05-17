@@ -71,8 +71,8 @@ ground_test_loader = DataLoader(
     pin_memory=not has_cuda)
 
 
-ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
-# ssl_lens_net = rsm.SNTGModel(4)
+# ssl_lens_net = rsm.ResNetSSL([3, 3, 3, 3, 3])
+ssl_lens_net = rsm.SNTGModel(4)
 
 # labeled_loss = nn.BCEWithLogitsLoss()
 

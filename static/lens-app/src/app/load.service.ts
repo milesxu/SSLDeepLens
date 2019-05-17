@@ -16,7 +16,7 @@ export class LoadService {
     start: 110000,
     length: 1024
   });
-  imageNumber = this.ImageNumberSource.asObservable();
+  imageNumber$ = this.ImageNumberSource.asObservable();
 
   reloadImage(imageNum: number) {
     const name = 'assets/combine123/';
@@ -29,5 +29,10 @@ export class LoadService {
       length: imageNum
     });
   }
+
   constructor() {}
+
+  get imageNumber() {
+    return this.ImageNumberSource.getValue();
+  }
 }

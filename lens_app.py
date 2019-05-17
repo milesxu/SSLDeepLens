@@ -17,11 +17,11 @@ test_composed = transforms.Compose([WhitenInput(), Clamp(1e-9, 100)])
 cpu_data = gbd.GroundBasedDataset(
     data_path, length=1, transform=test_composed, use_cuda=False)
 normal_net = rsm.SNTGModel(4)
-stng_net = rsm.SNTGModel(4)
-# normal_model = 'saved_model/ground_based2019-03-03-22-18.pth'
-stng_model = 'saved_model/ground_based2019-04-03-15-12.pth'
-# normal_net.load_state_dict(torch.load(normal_model))
-stng_net.load_state_dict(torch.load(stng_model))
+sntg_net = rsm.SNTGModel(4)
+normal_model = 'saved_model/ground_based2019-04-03-15-12.pth'
+sntg_model = 'saved_model/ground_based2019-05-17-12-02.pth'
+normal_net.load_state_dict(torch.load(normal_model))
+sntg_net.load_state_dict(torch.load(sntg_model))
 
 
 def classify_cpu():
@@ -29,27 +29,28 @@ def classify_cpu():
 
 
 def classify(processor, type, start, length):
+    # print(processor, type, start, length)
+    if type == 'normal':
+        lens_net = normal_net
+    else:
+        lens_net = sntg_net
     if processor == 'gpu':
+        # print('cuda used!')
         dataset = gbd.GroundBasedDataset(data_path, offset=start, length=length,
                                          transform=test_composed)
         data_loader = DataLoader(dataset, batch_size=length,
                                  shuffle=False, pin_memory=False)
-        run_loop = SNTGRunLoop(stng_net, test_loader=data_loader)
+        run_loop = SNTGRunLoop(lens_net, test_loader=data_loader)
     else:
         dataset = gbd.GroundBasedDataset(data_path, offset=start, length=length,
                                          transform=test_composed, use_cuda=False)
         data_loader = DataLoader(dataset, batch_size=length,
                                  shuffle=False, pin_memory=True)
         run_loop = SNTGRunLoop(
-            stng_net, test_loader=data_loader, has_cuda=False)
-    # if type == 'normal':
-    #     lens_net = normal_net
-    # else:
-    #     lens_net = stng_net
+            lens_net, test_loader=data_loader, has_cuda=False)
+
     # run_loop = SNTGRunLoop(stng_net, test_loader=data_loader)
     result, label, time, accuracy = run_loop.test()
-    # result = torch.argmax(F.softmax(logits, dim=1), dim=1).tolist()
-    # label = target.tolist()
     return result, label, time, accuracy
 
 
@@ -64,8 +65,8 @@ def hello_world():
 
 @app.route('/classify')
 def classify_api():
-    processor = request.args.get('processor')
-    model = request.args.get('model')
+    processor = request.args.get('processor').strip()
+    model = request.args.get('model').strip()
     length = request.args.get('length')
     start = request.args.get('start')
     # return type(length)

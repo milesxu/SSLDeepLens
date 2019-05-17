@@ -1,22 +1,32 @@
-import { Component } from "@angular/core";
-import { Record } from "../record";
-import { RecordService } from "../record.service";
-import { ImageNumber, LoadService } from "../load.service";
+import { Component } from '@angular/core';
+import { Record } from '../record';
+import { RecordService } from '../record.service';
+import { ImageNumber, LoadService } from '../load.service';
+import { API_URL } from '../env';
+import { HttpClient } from '@angular/common/http';
+
+export class Result {
+  result: number[];
+  label: number[];
+  time: number;
+  accuracy: number;
+}
 
 @Component({
-  selector: "app-main-menu",
-  templateUrl: "./main-menu.component.html"
+  selector: 'app-main-menu',
+  templateUrl: './main-menu.component.html'
 })
 export class MainMenuComponent {
-  dataset = "ground";
-  size = "small";
-  imageNum = "1024";
+  dataset = 'ground';
+  size = 'small';
+  imageNum = '1024';
   gpu = true;
   ssl = true;
 
   constructor(
     private recordService: RecordService,
-    private loadService: LoadService
+    private loadService: LoadService,
+    private http: HttpClient
   ) {}
 
   reLoad() {
@@ -25,27 +35,32 @@ export class MainMenuComponent {
   }
 
   runModel(): void {
-    const images = parseInt(this.imageNum, 10);
+    const imageNumber = this.loadService.imageNumber;
     let dataset: string;
-    if (this.dataset === "ground") {
-      dataset = "Ground Based";
+    if (this.dataset === 'ground') {
+      dataset = 'Ground Based';
     }
-    if (this.dataset === "sky") {
-      dataset = "Sky Based";
+    if (this.dataset === 'sky') {
+      dataset = 'Sky Based';
     }
-    const processor = this.gpu ? "GPU" : "CPU";
-    const algorithm = this.ssl ? "Resnet50 + SNTG" : "Resnet50";
-    const timing = Math.random() * 5;
-    const speed = images / timing;
-    const accuracy = Math.random();
-    this.recordService.addRecord({
-      dataset: dataset,
-      processor: processor,
-      algorithm: algorithm,
-      imageSize: images,
-      timing: timing,
-      speed: speed,
-      accuracy: accuracy
+    const processor = this.gpu ? 'GPU' : 'CPU';
+    const algorithm = this.ssl ? 'Resnet50 + SNTG' : 'Resnet50';
+    const model = this.ssl ? 'sntg' : 'normal';
+    const api_string = `${API_URL}/classify?processor=${processor.toLowerCase()}
+    &model=${model}&length=${imageNumber.length}&start=${imageNumber.start -
+      100000}`;
+    console.log(api_string);
+    this.http.get<Result>(api_string).subscribe(result => {
+      const speed = imageNumber.length / result.time;
+      this.recordService.addRecord({
+        dataset: dataset,
+        processor: processor,
+        algorithm: algorithm,
+        imageSize: imageNumber.length,
+        timing: result.time,
+        speed: speed,
+        accuracy: result.accuracy
+      });
     });
   }
 }
