@@ -14,7 +14,6 @@ class channel_gri:
         if (np.shape(self.red) != np.shape(self.green)) or \
             (np.shape(self.red) != np.shape(self.blue)):
             raise "Image arrays are of different shapes, exiting"
-            return False
         else:
             self.NX, self.NY = np.shape(self.red)
 
@@ -23,7 +22,7 @@ class channel_gri:
         self.green -= np.median(self.green)
         self.blue  -= np.median(self.blue)
 
-    def apply_scale(self, scales):
+    def apply_scale(self, scales=(1.0,1.0,1.0)):
         assert len(scales) == 3
         s1,s2,s3 = scales
         mean = (s1 + s2 + s3)/3.0
@@ -31,24 +30,30 @@ class channel_gri:
         self.green *= (s2/mean)
         self.blue  *= (s3/mean)
 
-    def pjm_offset(self, offset):
-        self.red   += offset
-        self.green += offset
-        self.blue  += offset
+    def pjm_offset(self, offset=0.0):
+        if offset==None:
+            pass
+        else:
+            self.red   += offset
+            self.green += offset
+            self.blue  += offset
 
-    def pjm_mask(self,threshold):
-        tiny = 1e-12
-        mask = self.red*0.0 + 1.0
-        for image in (self.red, self.green, self.blue):
-            image[np.isnan(image)] = 0.0
-            image[np.isinf(image)] = 0.0
-            mask[image < threshold] = 0.0
-            mask[(image > -tiny) & (image < tiny)] = 0.0
-        self.red   *= mask
-        self.green *= mask
-        self.blue  *= mask
+    def pjm_mask(self,masklevel=None):
+        if masklevel==None:
+            pass
+        else:
+            tiny = 1e-12
+            mask = self.red*0.0 + 1.0
+            for image in (self.red, self.green, self.blue):
+                image[np.isnan(image)] = 0.0
+                image[np.isinf(image)] = 0.0
+                mask[image < masklevel] = 0.0
+                mask[(image > -tiny) & (image < tiny)] = 0.0
+            self.red   *= mask
+            self.green *= mask
+            self.blue  *= mask
 
-    def lupton_stretch(self, Q, alpha, itype='sum'):
+    def lupton_stretch(self, Q=1.0, alpha=1.0, itype='sum'):
         if itype == 'sum':
             I = (self.red+self.green+self.blue) + 1e-10
         elif itype == 'rms':
@@ -58,43 +63,25 @@ class channel_gri:
         self.green *= stretch
         self.blue  *= stretch
 
-    def lupton_saturate(self,threshold=1.0):
-        x = np.dstack((self.red, self.green,self.blue))
-        maxpix = np.max(x, axis=-1)
-        maxpix[maxpix<threshold] = 1.0
-        self.red   /= maxpix
-        self.green /= maxpix
-        self.blue  /= maxpix
+    def lupton_saturate(self,threshold=1.0, saturation='white'):
+        if saturation=="white":
+            pass
+        elif saturation=="color":
+            x = np.dstack((self.red, self.green,self.blue))
+            maxpix = np.max(x, axis=-1)
+            maxpix[maxpix<threshold] = 1.0
+            self.red   /= maxpix
+            self.green /= maxpix
+            self.blue  /= maxpix
+        else:
+            print("Not a recognized type of saturation!!!")
 
     def pack_up(self):
         x = np.zeros([self.NX,self.NY,3])
         x[:,:,0] = np.flipud(self.red)
         x[:,:,1] = np.flipud(self.green)
         x[:,:,2] = np.flipud(self.blue)
+        x = x/(x.ravel()[x.ravel().argsort()[-1]])
         x = np.clip(x,0.0,1.0)
         x = x*255
-        return Image.fromarray(x.astype(np.uint8))
-
-# ======================================================================
-def compose_imgs(img_g, img_r, img_i, \
-                 scales=(1.0,1.0,1.0), \
-                 Q=1.0, alpha=1.0, saturation='color', \
-                 masklevel=None, offset=None, \
-                 outfile='color.png'):
-    # -------------------------------------------------------------------
-    object_gri = channel_gri(img_g, img_r, img_i)
-    object_gri.apply_scale(scales)
-    object_gri.lupton_stretch(Q, alpha, itype='rms')
-    # -------------------------------------------------------------------
-    if masklevel is not None:
-        object_gri.pjm_mask(masklevel)
-    if offset is not None:
-        object_gri.pjm_offset(offset)
-    # -------------------------------------------------------------------
-    if saturation == 'color':
-        object_gri.lupton_saturate(threshold=1.0)
-    # -------------------------------------------------------------------
-    image = object_gri.pack_up()
-    image.save(outfile)
-    # -------------------------------------------------------------------
-    return image
+        self.imgRGB = Image.fromarray(x.astype(np.uint8))
