@@ -13,7 +13,7 @@ export class ImageNumber {
 })
 export class LoadService {
   private ImageNumberSource = new BehaviorSubject<ImageNumber>({
-    baseName: 'assets/combine123/',
+    baseName: 'assets/combine213/',
     start: 110000,
     length: 1024,
     mask: new Array(1024).fill(1)
@@ -21,7 +21,7 @@ export class LoadService {
   imageNumber$ = this.ImageNumberSource.asObservable();
 
   reloadImage(imageNum: number) {
-    const name = 'assets/combine123/';
+    const name = 'assets/combine213/';
     const begin = 110000;
     const offset = Math.floor(Math.random() * (10000 - imageNum));
     // console.log(offset);
