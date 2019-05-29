@@ -11,7 +11,7 @@ export class GalleryComponent implements OnInit {
   // base_num = 100000;
   start = 110000;
   // offset = 9000;
-  length = 1024;
+  length = 128;
   imageLen = this.length;
   batch_len = 128;
   batch_num = 8;

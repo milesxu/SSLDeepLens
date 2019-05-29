@@ -15,8 +15,8 @@ export class LoadService {
   private ImageNumberSource = new BehaviorSubject<ImageNumber>({
     baseName: 'assets/combine123/',
     start: 110000,
-    length: 1024,
-    mask: new Array(1024).fill(1)
+    length: 128,
+    mask: new Array(128).fill(1)
   });
   imageNumber$ = this.ImageNumberSource.asObservable();
 
