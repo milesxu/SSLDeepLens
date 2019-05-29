@@ -7,7 +7,7 @@ import { ImageNumber, LoadService } from '../load.service';
   styleUrls: ['./gallery.component.css']
 })
 export class GalleryComponent implements OnInit {
-  base_name = 'assets/combine123/';
+  base_name = 'assets/combine213/';
   // base_num = 100000;
   start = 110000;
   // offset = 9000;
