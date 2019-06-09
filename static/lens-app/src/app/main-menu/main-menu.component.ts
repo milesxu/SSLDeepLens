@@ -19,7 +19,7 @@ export class Result {
 export class MainMenuComponent {
   dataset = 'ground';
   size = 'small';
-  imageNum = '1024';
+  imageNum = '128';
   gpu = true;
   ssl = true;
 
