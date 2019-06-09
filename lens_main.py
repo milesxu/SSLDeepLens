@@ -41,7 +41,8 @@ train_params = {
     'augment_translation': 2,
     'unsup_wght': 0.0,
     'whiten_inputs': 'norm',  # norm, zca
-    'polyak_decay': 0.999
+    'polyak_decay': 0.999,
+    'unsup_wght_scale': 1.0
 }
 torch.manual_seed(770715)
 has_cuda = torch.cuda.is_available()
@@ -79,7 +80,8 @@ ssl_lens_net = rsm.SNTGModel(4)
 lr_fn = learning_rate_update(
     train_params['rampup_length'], train_params['rampdown_length'],
     train_params['learning_rate'], train_params['adam_beta1'],
-    train_params['rd_beta1_target'], train_params['num_epochs']
+    train_params['rd_beta1_target'], train_params['num_epochs'],
+    scale=train_params['unsup_wght_scale']
     # train_params['rd_beta1_target'], 100
 )
 
