@@ -208,3 +208,11 @@ class SNTGRunLoop(object):
                 # return roc_curve(is_lens, test_logits)
                 return result.tolist(), is_lens.tolist(), end - start, \
                     accuracy
+
+    def test_origin(self):
+        self.net.eval()
+        with torch.no_grad():
+            for i, data_batched in enumerate(self.test_loader, 0):
+                images, is_lens = data_batched['image'], data_batched['is_lens']
+                test_logits, _ = self.net(images)
+                return test_logits, is_lens
