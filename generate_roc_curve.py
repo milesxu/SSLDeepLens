@@ -12,7 +12,7 @@ from run_loop import SNTGRunLoop
 
 torch.manual_seed(770715)
 torch.cuda.manual_seed_all(770715)
-data_path = '/home/mingx/datasets'
+data_path = '/data/mingx/datasets'
 test_composed = transforms.Compose([WhitenInput(), Clamp(1e-9, 100)])
 
 sntg_net = rsm.SNTGModel(4)
@@ -56,7 +56,7 @@ plt.suptitle('ROC on Training set')
 plt.plot(fpr, tpr)
 plt.xlabel('FPR')
 plt.ylabel('TPR')
-plt.xlim(0, 0.3)
-plt.ylim(0.86, 1.)
+plt.xlim(0, 1)
+plt.ylim(0, 1)
 plt.grid('on')
 plt.savefig(os.path.join(data_path, 'roc_curve.png'), format='png')
