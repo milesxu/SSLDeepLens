@@ -29,6 +29,24 @@ class Clamp(object):
         return sample
 
 
+class BoundedScale(object):
+    def __init__(self, bound=1e-6, scale=100.0):
+        self.bound = bound
+        self.scale = scale
+
+    def __call__(self, sample):
+        image = sample['image']
+        mask = image.eq(self.scale)
+        image[mask] = 0.0
+        max_tensor = torch.max(image)
+        image = (image - self.bound) / (max_tensor - self.bound) + self.bound
+        mask = image.lt(self.bound)
+        image[mask] = self.bound
+        image.log10_()
+        sample['image'] = image
+        return sample
+
+
 class WhitenInput(object):
     def __init__(self, type='norm'):
         self.type = type
