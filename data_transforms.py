@@ -66,8 +66,18 @@ class BoundedScale(object):
 
         # Pass back processed images
         sample['image'] = image
-        return sample
 
+        # If possible, I suggest that we use the fucntion
+        # --- compose_class.generate_rgb_single(img_g_rscl, img_r_rscl, img_i_rscl) ---
+        # to double check whether the preprocess above makes sense.
+        # The usage of the function is :
+        #
+        #   compose_class.generate_rgb_single(sample['image'][{Band3}], \
+        #                                     smaple['image'][{Band1}], \
+        #                                     sample['image'][{Band2}])
+        #
+        # 1000 chromatic pngs should be enough.
+        return sample
 
 class WhitenInput(object):
     def __init__(self, type='norm'):
