@@ -37,29 +37,30 @@ class BoundedScale(object):
 
     def __call__(self, sample):
 
-        # Load in original images
-        # Assume the data structure of sample['image'] is a 3-D array
+        # Load in original images.
+        # I assume that the data structure of sample['image'] is a 3-D array,
         # like [image_g, image_r, image_i, image_z],
-        # where image_* is a 2-D array.
+        # where image_* are 2-D arrays for presenting the images in corresponding channels.
+        # Futhermore, sample['image'] stands for one system only.
         image = sample['image']
 
         # Remove bad pixels
         mask = image.eq(self.badPixel)
         image[mask] = 0.0
 
-        # Rescale images
+        # Scale up images
         image = image*self.factor0
 
-        # clip images
+        # Clip and rescale images
         max_tensor = torch.max(image)
         image = (image - self.bound) / (max_tensor - self.bound) + self.bound
         mask = image.lt(self.bound)
         image[mask] = self.bound
 
-        # to logrithm scale
+        # To logarithmic scale
         image.log10_()
 
-        # pass rescaled images
+        # Pass back processed images
         sample['image'] = image
         return sample
 
