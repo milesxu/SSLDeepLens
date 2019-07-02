@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 import astropy.io.fits as pyfits
-from compose_class import channel_gri
+from compose_class import channel_RGB
 # import aplpy
 
 
@@ -70,7 +70,7 @@ def generate_rgb(src_path, dst_path, number=20000):
         dst_image = f'ground_based_{start + i}.png'
         dst_image = os.path.join(dst_path, dst_image)
 
-        object_gri = channel_gri(img_g_rscl, img_r_rscl, img_i_rscl)
+        object_gri = channel_RGB(RED=img_i_rscl, GREEN=img_r_rscl, BLUE=img_g_rscl)
         object_gri.apply_scale(scales=scales)
         object_gri.lupton_stretch(Q=Q, alpha=alpha, itype=itype)
         object_gri.pjm_mask(masklevel=masklevel)

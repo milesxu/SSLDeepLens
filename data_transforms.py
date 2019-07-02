@@ -47,6 +47,8 @@ class BoundedScale(object):
         # Remove bad pixels
         mask = image.eq(self.badPixel)
         image[mask] = 0.0
+        mask = np.isnan(image)
+        image[mask] = 0.0
 
         # Scale up images
         image = image*self.factor0
@@ -59,6 +61,8 @@ class BoundedScale(object):
 
         # To logarithmic scale
         image.log10_()
+        mask = np.isnan(image)
+        image[mask] = np.log10(self.bound)
 
         # Pass back processed images
         sample['image'] = image
