@@ -30,19 +30,36 @@ class Clamp(object):
 
 
 class BoundedScale(object):
-    def __init__(self, bound=1e-6, scale=100.0):
+    def __init__(self, bound=1e-11, badPixel=100.0, factor0=1e11):
         self.bound = bound
-        self.scale = scale
+        self.badPixel = badPixel
+        self.factor0 = factor0
 
     def __call__(self, sample):
+
+        # Load in original images
+        # Assume the data structure of sample['image'] is a 3-D array
+        # like [image_g, image_r, image_i, image_z],
+        # where image_* is a 2-D array.
         image = sample['image']
-        mask = image.eq(self.scale)
+
+        # Remove bad pixels
+        mask = image.eq(self.badPixel)
         image[mask] = 0.0
+
+        # Rescale images
+        image = image*self.factor0
+
+        # clip images
         max_tensor = torch.max(image)
         image = (image - self.bound) / (max_tensor - self.bound) + self.bound
         mask = image.lt(self.bound)
         image[mask] = self.bound
+
+        # to logrithm scale
         image.log10_()
+
+        # pass rescaled images
         sample['image'] = image
         return sample
 
