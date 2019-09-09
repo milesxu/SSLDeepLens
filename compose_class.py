@@ -1,11 +1,11 @@
 import numpy as np
 from PIL import Image
 # =====================================================================
-class channel_gri:
-    def __init__(self, img_g, img_r, img_i, backsub=False):
-        self.red   = img_i
-        self.green = img_r
-        self.blue  = img_g
+class channel_RGB(object):
+    def __init__(self, RED=None, GREEN=None, BLUE=None, backsub=False):
+        self.red   = RED
+        self.green = GREEN
+        self.blue  = BLUE
         self.check_image_shapes()
         if backsub:
             self.subtract_background()
@@ -63,7 +63,7 @@ class channel_gri:
         self.green *= stretch
         self.blue  *= stretch
 
-    def lupton_saturate(self,threshold=1.0, saturation='white'):
+    def lupton_saturate(self,threshold=1.0, saturation='white', unsat=0.995):
         if saturation=="white":
             pass
         elif saturation=="color":
@@ -76,12 +76,17 @@ class channel_gri:
         else:
             print("Not a recognized type of saturation!!!")
 
-    def pack_up(self):
+        all_tmp = np.hstack([self.red.ravel(), self.green.ravel(), self.blue.ravel()])
+        self.red    /= (all_tmp[all_tmp.argsort()[int(np.round(len(all_tmp)*unsat))]])
+        self.green  /= (all_tmp[all_tmp.argsort()[int(np.round(len(all_tmp)*unsat))]])
+        self.blue   /= (all_tmp[all_tmp.argsort()[int(np.round(len(all_tmp)*unsat))]])
+
+    def pack_up(self, unsat=0.995):
         x = np.zeros([self.NX,self.NY,3])
         x[:,:,0] = np.flipud(self.red)
         x[:,:,1] = np.flipud(self.green)
         x[:,:,2] = np.flipud(self.blue)
-        x = x/(x.ravel()[x.ravel().argsort()[-1]])
+        # x = x/(x.ravel()[x.ravel().argsort()[int(np.round(len(x.ravel())*unsat))]])
         x = np.clip(x,0.0,1.0)
         x = x*255
         self.imgRGB = Image.fromarray(x.astype(np.uint8))
