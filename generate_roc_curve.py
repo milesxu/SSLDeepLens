@@ -84,6 +84,9 @@ tpr = n_tp / np.sum(labels).astype('float32')
 fpr = n_fp / np.sum(labels == 0).astype('float32')
 # print(tpr)
 # print(fpr)
+npz_path = os.path.join(data_path, 'tpr_result.npz')
+np.savez(npz_path, tpr=tpr, fpr=fpr, stride=stride,
+         prob=prob_flat, labels=labels)
 
 # plt.suptitle('ROC on Training set')
 # plt.plot(fpr, tpr)
