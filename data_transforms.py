@@ -30,22 +30,54 @@ class Clamp(object):
 
 
 class BoundedScale(object):
-    def __init__(self, bound=1e-6, scale=100.0):
+    def __init__(self, bound=1e-11, badPixel=100.0, factor0=1e11):
         self.bound = bound
-        self.scale = scale
+        self.badPixel = badPixel
+        self.factor0 = factor0
 
     def __call__(self, sample):
+
+        # Load in original images.
+        # I assume that the data structure of sample['image'] is a 3-D array,
+        # like [image_g, image_r, image_i, image_z],
+        # where image_* are 2-D arrays for presenting the images in corresponding channels.
+        # Futhermore, sample['image'] stands for one system only.
         image = sample['image']
-        mask = image.eq(self.scale)
+
+        # Remove bad pixels
+        mask = image.eq(self.badPixel)
         image[mask] = 0.0
+        mask = np.isnan(image)
+        image[mask] = 0.0
+
+        # Scale up images
+        image = image*self.factor0
+
+        # Clip and rescale images
         max_tensor = torch.max(image)
         image = (image - self.bound) / (max_tensor - self.bound) + self.bound
         mask = image.lt(self.bound)
         image[mask] = self.bound
-        image.log10_()
-        sample['image'] = image
-        return sample
 
+        # To logarithmic scale
+        image.log10_()
+        mask = np.isnan(image)
+        image[mask] = np.log10(self.bound)
+
+        # Pass back processed images
+        sample['image'] = image
+
+        # If possible, I suggest that we use the fucntion
+        # --- compose_class.generate_rgb_single(img_g_rscl, img_r_rscl, img_i_rscl) ---
+        # to double check whether the preprocess above makes sense.
+        # The usage of the function is :
+        #
+        #   compose_class.generate_rgb_single(sample['image'][{Band3}], \
+        #                                     smaple['image'][{Band1}], \
+        #                                     sample['image'][{Band2}])
+        #
+        # 1000 chromatic pngs should be enough.
+        return sample
 
 class WhitenInput(object):
     def __init__(self, type='norm'):
