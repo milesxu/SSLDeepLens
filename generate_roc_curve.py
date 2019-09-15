@@ -70,18 +70,20 @@ plt.legend(loc='lower right')
 
 # n_fp = np.sum(p * (labels == 0), axis=0).astype('float32')
 # n_tp = np.sum(p * labels, axis=0).astype('float32')
-# fp_array = p[~labels, :]
-# tp_array = p[labels, :]
+fp_array = p[~labels, :]
+tp_array = p[labels, :]
 # print(len(fp_array), len(tp_array))
 # print(fp_array)
 # print(tp_array)
-# n_fp = np.sum(fp_array, axis=0).astype('float32')
-# n_tp = np.sum(tp_array, axis=0).astype('float32')
+n_fp = np.sum(fp_array, axis=0).astype('float32')
+n_tp = np.sum(tp_array, axis=0).astype('float32')
 
-# labels = np.array(labels, dtype='int')
+labels = np.array(labels, dtype='int')
 # print(labels)
-# tpr = n_tp / np.sum(labels).astype('float32')
-# fpr = n_fp / np.sum(labels == 0).astype('float32')
+tpr = n_tp / np.sum(labels).astype('float32')
+fpr = n_fp / np.sum(labels == 0).astype('float32')
+# print(tpr)
+# print(fpr)
 
 # plt.suptitle('ROC on Training set')
 # plt.plot(fpr, tpr)
