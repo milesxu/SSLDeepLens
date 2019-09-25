@@ -12,7 +12,7 @@ from run_loop import SNTGRunLoop
 torch.manual_seed(770715)
 torch.cuda.manual_seed_all(770715)
 # data_path = '/home/milesx/datasets/deeplens'
-data_path = '/home/nvdemo/datasets'
+data_path = '/data/mingx/datasets'
 test_composed = transforms.Compose([WhitenInput(), Clamp(1e-9, 100)])
 cpu_data = gbd.GroundBasedDataset(
     data_path, length=1, transform=test_composed, use_cuda=False)

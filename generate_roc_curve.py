@@ -112,9 +112,9 @@ tpr, fpr = save_npz(labels, stride, prob_flat)
 fpr_sk, tpr_sk, _ = roc_curve(labels, prob_flat)
 print(auc(fpr_sk, tpr_sk))
 fpr_arr, tpr_arr = eval_outputs(prob_flat, labels)
-masks1 = fpr < 5e-2
-masks2 = fpr_arr < 5e-2
-masks3 = fpr_sk < 5e-2
+masks1 = fpr < 1.0
+masks2 = fpr_arr < 1.0
+masks3 = fpr_sk < 1.0
 lw = 1
 plt.figure()
 # plt.plot(fpr_sk, tpr_sk, color='darkgreen', lw=lw,
